@@ -10,21 +10,21 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO CORREGIDO (ETIQUETAS VISIBLES EN AMARILLO)
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (NUEVA SILUETA CESSNA 172 EN PERSPECTIVA)
 st.markdown("""
     <style>
-    /* Fondo principal con la silueta de perfil de un Cessna 172 */
+    /* Fondo principal con la silueta exacta en perspectiva del Cessna 172 */
     .stApp {
         background-color: #1E222A;
         color: #E2E8F0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600' opacity='0.04'%3E%3Cpath fill='%2300FF66' d='M100,270 L130,265 L180,265 L220,250 L340,245 L400,252 L700,275 L950,290 L1020,240 L1060,240 L1050,330 L1010,345 L900,340 L500,315 L430,315 L380,360 L340,360 L310,320 L240,320 L210,345 L170,345 L180,300 L120,295 L100,285 Z M320,245 L360,210 L520,210 L500,248 Z M360,360 L370,410 L390,415 L360,360 Z M210,345 L200,415 L225,420 L230,340 Z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 310 197' opacity='0.04'%3E%3Cpath fill='%2300FF66' d='M297.8 2.2c-5.7 1.8-49 19.3-96.2 38.8-47.3 19.5-88.5 36.8-91.7 38.4-4.2 2.1-5.1 3-5.1 5.3 0 1.2.7 2.1 2.3 3.1 3.2 1.9 14.5 4.5 35.6 8.3 12.3 2.2 25.1 4.5 28.5 5 11.2 1.7 18.2 5.1 20 9.8.7 1.9.9 4.3.4 6.7-.8 3.3-3.4 8.2-11.4 21.4-6.4 10.6-11.8 19.8-12 20.4-.6 1.7.5 3.3 2.4 3.7 1.3.3 2.1-.1 3.5-1.7 4.1-4.8 17.5-23.7 21-29.6 1.9-3.2 3.6-5.8 3.8-5.8.1 0 4 1.9 8.5 4.2l8.2 4.1-1.2 3.8c-2.3 7-4.1 13.5-4.1 15.1 0 2.2 1.8 4.2 4.1 4.5 2 .2 3.4-.6 5-2.7 3.5-4.4 9.1-13.6 11.1-18.4l1.1-2.6 15 5.5c8.3 3 15.6 5.6 16.3 5.6.8 0 3-1.6 4.9-3.4 4.7-4.6 13.5-16.7 16-22.1 1-2 1.1-2.9.7-4.3-.8-3.1-4.7-6.9-10.7-10.3-4.5-2.5-19.1-9-33-14.7-3.2-1.3-6.1-2.6-6.4-2.8-.4-.3 1.8-3.2 4.8-6.6 6.3-7.1 11.7-13.7 14.4-17.7 5.8-8.5 6.7-11.2 4.6-13.5-1-1.1-2.6-1.9-5-2.4-1.9-.3-10-.7-23.9-1.2-11.8-.4-21.9-.9-22.3-1-.5-.2 7.7-6.9 18.2-15 17.4-13.4 35.6-27.3 40.5-30.8 12.5-9 22-16.2 22-16.7 0-.9-2-1.4-6-1.4-.8.1-2 .3-2.6.5zm-155.6 86c-13.6-2.5-31.5-5.9-39.7-7.7-17-3.7-17.2-3.7-14.5-2.6 8.3 3.5 49.3 17.6 53.6 18.5 1 .3 1-.1.6-1.2-1.1-2.9-1.1-2.9 0-7 .3-1.2.3-1.2-.6-1.4-.4-.1-1 .1-1.4.3-1.6.7-22.6 7-23.6 7-.4 0-.1-1.1.6-2.5.7-1.3 22-10 23.8-10 .7 0 1 .4 1 1.2 0 1.2-2.1 9.4-2.4 9.5-.1 0 1 .2 2.3.4s2.3.4 2.3.3c.1-.1 1-3.6 2-7.8l1.8-7.6h1.2l1.2.1-2.7 11c-1.4 6.1-2.6 11.2-2.6 11.4 0 .4-.7.3-6.5-.8zM3.4 186.2c-2.3.7-3.4 1.9-3.4 3.3 0 2.2 3.1 3.9 6.8 3.9 1.6 0 2.5-.3 6.3-1.8 13.9-5.4 75.3-30.2 119.7-48.2l30.2-12.2-1.7-1c-1-.5-6.5-2-12.3-3.2-5.7-1.3-10.7-2.5-11-2.7-.4-.3-15.6 5.5-33.8 12.7-18.2 7.3-43.2 17.2-55.5 22.1-27.2 10.9-46.7 19-48.4 19.6-1.1.3-1.5.3-1.9.5z'/%3E%3C/svg%3E");
         background-position: center 38%;
         background-repeat: no-repeat;
         background-size: 780px;
     }
     
-    /* ¡SOLUCIÓN CLAVE! Forzar a todas las etiquetas de los campos a color amarillo ámbar */
+    /* Etiquetas del formulario forzadas en amarillo ámbar aeronáutico */
     label, p[data-testid="stWidgetLabel"] {
         color: #FFB703 !important;
         font-weight: 600 !important;
@@ -34,14 +34,14 @@ st.markdown("""
         margin-bottom: 5px !important;
     }
     
-    /* Modificar las opciones de los botones de radio (Doble Comando / Vuelo Solo) */
+    /* Opciones dentro del componente Radio Button */
     div[data-testid="stRadio"] label p {
         color: #FFFFFF !important;
         text-transform: none !important;
         font-weight: normal !important;
     }
 
-    /* Encabezados estilo aviónica Garmin */
+    /* Estilo de los encabezados tipo aviónica */
     h1 {
         color: #00FF66 !important;
         font-weight: 700 !important;
@@ -54,7 +54,7 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Paneles de los formularios e instrumentos */
+    /* Cajas del formulario e indicadores métricos */
     div[data-testid="stForm"], .stMetric {
         background-color: #282C34 !important;
         border: 2px solid #3E4451 !important;
@@ -63,7 +63,7 @@ st.markdown("""
         box-shadow: inset 0px 0px 15px rgba(0,0,0,0.5) !important;
     }
     
-    /* Displays digitales de las métricas */
+    /* Displays digitales de totales */
     div[data-testid="stMetricValue"] {
         color: #00FF66 !important;
         font-family: 'Courier New', monospace !important;
@@ -71,13 +71,13 @@ st.markdown("""
         font-size: 2rem !important;
     }
     div[data-testid="stMetricLabel"] {
-        color: #FFB703 !important; /* También pasamos a amarillo los títulos de métricas */
+        color: #FFB703 !important;
         text-transform: uppercase;
         font-size: 0.85rem !important;
         letter-spacing: 1px;
     }
     
-    /* Botón Master Switch (Guardar) */
+    /* Botón Master Execute */
     div.stButton > button {
         background-color: #D90429 !important;
         color: white !important;
@@ -95,20 +95,19 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* Inputs del sistema: Fondo gris oscuro con texto blanco nítido */
+    /* Campos de entrada de datos */
     .stTextInput input, .stSelectbox select, .stNumberInput input, .stTimeInput input, .stTextArea textarea {
         background-color: #17191E !important;
         color: #FFFFFF !important;
         border: 1px solid #4B5563 !important;
     }
     
-    /* Ajuste para el texto dentro de los placeholders */
     ::placeholder {
         color: #6B7280 !important;
         opacity: 1;
     }
 
-    /* Indicador de progreso (Arco verde) */
+    /* Arco verde del indicador de progreso */
     .stProgress > div > div > div > div {
         background-color: #00FF66 !important;
     }
