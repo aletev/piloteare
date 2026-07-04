@@ -10,9 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (SILUETA CESSNA 172 EN PERSPECTIVA)
+# 2. 🌌 INYECCIÓN DE CSS SEGURO Y OPTIMIZADO PARA MÓVILES
 st.markdown("""
     <style>
+    /* Fondo principal con la silueta en perspectiva del Cessna 172 */
     .stApp {
         background-color: #1E222A;
         color: #E2E8F0;
@@ -23,21 +24,14 @@ st.markdown("""
         background-size: 780px;
     }
     
+    /* Etiquetas forzadas en amarillo ámbar aeronáutico de forma segura */
     label, p[data-testid="stWidgetLabel"] {
         color: #FFB703 !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
-        margin-bottom: 5px !important;
     }
     
-    div[data-testid="stRadio"] label p {
-        color: #FFFFFF !important;
-        text-transform: none !important;
-        font-weight: normal !important;
-    }
-
+    /* Títulos estilo aviónica Garmin */
     h1 {
         color: #00FF66 !important;
         font-weight: 700 !important;
@@ -50,55 +44,35 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
+    /* Contenedores fijos del panel */
     div[data-testid="stForm"], .stMetric {
         background-color: #282C34 !important;
         border: 2px solid #3E4451 !important;
         border-radius: 10px !important;
         padding: 20px !important;
-        box-shadow: inset 0px 0px 15px rgba(0,0,0,0.5) !important;
     }
     
+    /* Displays digitales de las métricas */
     div[data-testid="stMetricValue"] {
         color: #00FF66 !important;
         font-family: 'Courier New', monospace !important;
-        font-weight: bold !important;
-        font-size: 2rem !important;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #FFB703 !important;
-        text-transform: uppercase;
-        font-size: 0.85rem !important;
-        letter-spacing: 1px;
+        font-weight: bold;
     }
     
+    /* Botón Master Execute Switch */
     div.stButton > button {
         background-color: #D90429 !important;
         color: white !important;
         font-weight: bold !important;
         text-transform: uppercase;
         border: 2px solid #B80320 !important;
-        border-radius: 5px !important;
-        padding: 0.6rem 2rem !important;
-        box-shadow: 0px 4px 10px rgba(217, 4, 41, 0.4) !important;
-        transition: all 0.2s ease;
         width: 100%;
     }
     div.stButton > button:hover {
         background-color: #FF0934 !important;
-        transform: scale(1.02);
-    }
-    
-    .stTextInput input, .stSelectbox select, .stNumberInput input, .stTimeInput input, .stTextArea textarea {
-        background-color: #17191E !important;
-        color: #FFFFFF !important;
-        border: 1px solid #4B5563 !important;
-    }
-    
-    ::placeholder {
-        color: #6B7280 !important;
-        opacity: 1;
     }
 
+    /* Arco verde del indicador de progreso */
     .stProgress > div > div > div > div {
         background-color: #00FF66 !important;
     }
@@ -126,10 +100,10 @@ try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_existente = conn.read(spreadsheet=URL_PLANILLA, ttl="0m")
 except Exception as e:
-    st.error("Error al conectar con la Aviónica de Google Sheets. Verificá la conexión.")
+    st.error("Error al conectar con la Aviónica de Google Sheets.")
     df_existente = pd.DataFrame()
 
-# 5. 🛩️ FLOTA REAL DEL CUA + TU MATRÍCULA
+# 5. 🛩️ FLOTA REAL DEL CUA
 FLOTA_CUA = {
     "LV-ALE (Mi Matrícula Cessna)": {"modelo": "Cessna 172", "mat": "LV-ALE"},
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
@@ -143,7 +117,7 @@ FLOTA_CUA = {
     "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"}
 }
 
-# --- SECCIÓN PANEL DE CONTROL ---
+# --- PANEL DE INSTRUMENTOS (TOTALES) ---
 st.markdown("### 📊 PANEL DE INSTRUMENTOS (TOTALES CURSO)")
 
 if not df_existente.empty and "Horas_Totales" in df_existente.columns:
@@ -169,11 +143,11 @@ if not df_existente.empty and "Horas_Totales" in df_existente.columns:
     st.markdown("<small style='color: #A0AEC0;'>Progreso reglamentario ANAC (Mínimo 40 horas)</small>", unsafe_allow_html=True)
     st.progress(min(tot_horas / 40.0, 1.0))
 else:
-    st.info("Esperando encendido de motores. Ningún vuelo registrado en los instrumentos.")
+    st.info("Esperando encendido de motores.")
 
 st.markdown("---")
 
-# --- SECCIÓN FORMULARIO CORREGIDO ANTIFALLAS EN CELULARES ---
+# --- FORMULARIO DE REGISTRO LIMPIO Y SEGURO ---
 st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
 
 with st.form("vuelo_oficial_form", clear_on_submit=True):
@@ -196,21 +170,18 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
         tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0)
         
         costo_usd = costo_ars / tc if tc > 0 else 0.0
-        st.markdown(f"<p style='color: #00FF66; margin-top: 15px;'>Costo del tramo computado: <b>USD {costo_usd:.2f}</b></p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color: #00FF66; margin-top: 15px;'>Costo estimado: <b>USD {costo_usd:.2f}</b></p>", unsafe_allow_html=True)
 
     st.markdown("##### 💭 BITÁCORA EMOCIONAL Y ANECDOTARIO")
-    c_p, c_a = st.columns([1, 2])
-    with c_p:
-        puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
-    with c_a:
-        anecdota = st.text_area("Sensaciones al mando, meteorología, viento cruzado o hitos del día...")
+    puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
+    anecdota = st.text_area("Sensaciones al mando, meteorología, viento cruzado o hitos del día...")
 
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
-        # La asignación se procesa al enviar el formulario de forma segura para evitar bucles en React
+        # Lógica de asignación plana pos-submit (Cero interferencias de React al renderizar)
         if avion_sel == "Otro / Avión Visitante":
-            matricula = "LV-UNK"  # Valor por defecto seguro para móvil si es externo
+            matricula = "LV-UNK"
             modelo = "Otro"
         else:
             matricula = FLOTA_CUA[avion_sel]["mat"]
