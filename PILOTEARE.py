@@ -10,10 +10,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (NUEVA SILUETA CESSNA 172 EN PERSPECTIVA)
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (SILUETA CESSNA 172 EN PERSPECTIVA)
 st.markdown("""
     <style>
-    /* Fondo principal con la silueta exacta en perspectiva del Cessna 172 */
     .stApp {
         background-color: #1E222A;
         color: #E2E8F0;
@@ -24,7 +23,6 @@ st.markdown("""
         background-size: 780px;
     }
     
-    /* Etiquetas del formulario forzadas en amarillo ámbar aeronáutico */
     label, p[data-testid="stWidgetLabel"] {
         color: #FFB703 !important;
         font-weight: 600 !important;
@@ -34,14 +32,12 @@ st.markdown("""
         margin-bottom: 5px !important;
     }
     
-    /* Opciones dentro del componente Radio Button */
     div[data-testid="stRadio"] label p {
         color: #FFFFFF !important;
         text-transform: none !important;
         font-weight: normal !important;
     }
 
-    /* Estilo de los encabezados tipo aviónica */
     h1 {
         color: #00FF66 !important;
         font-weight: 700 !important;
@@ -54,7 +50,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Cajas del formulario e indicadores métricos */
     div[data-testid="stForm"], .stMetric {
         background-color: #282C34 !important;
         border: 2px solid #3E4451 !important;
@@ -63,7 +58,6 @@ st.markdown("""
         box-shadow: inset 0px 0px 15px rgba(0,0,0,0.5) !important;
     }
     
-    /* Displays digitales de totales */
     div[data-testid="stMetricValue"] {
         color: #00FF66 !important;
         font-family: 'Courier New', monospace !important;
@@ -77,7 +71,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Botón Master Execute */
     div.stButton > button {
         background-color: #D90429 !important;
         color: white !important;
@@ -95,7 +88,6 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* Campos de entrada de datos */
     .stTextInput input, .stSelectbox select, .stNumberInput input, .stTimeInput input, .stTextArea textarea {
         background-color: #17191E !important;
         color: #FFFFFF !important;
@@ -107,7 +99,6 @@ st.markdown("""
         opacity: 1;
     }
 
-    /* Arco verde del indicador de progreso */
     .stProgress > div > div > div > div {
         background-color: #00FF66 !important;
     }
@@ -182,7 +173,7 @@ else:
 
 st.markdown("---")
 
-# --- SECCIÓN FORMULARIO ---
+# --- SECCIÓN FORMULARIO CORREGIDO ANTIFALLAS EN CELULARES ---
 st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
 
 with st.form("vuelo_oficial_form", clear_on_submit=True):
@@ -191,14 +182,6 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     with col1:
         fecha = st.date_input("Fecha del Vuelo", datetime.date.today())
         avion_sel = st.selectbox("Selección de Aeronave", list(FLOTA_CUA.keys()))
-        
-        if avion_sel == "Otro / Avión Visitante":
-            matricula = st.text_input("Matrícula Manual", value="LV-").upper()
-            modelo = st.text_input("Modelo Manual", value="Cessna 172")
-        else:
-            matricula = FLOTA_CUA[avion_sel]["mat"]
-            modelo = FLOTA_CUA[avion_sel]["modelo"]
-        
         instructor = st.text_input("Instructor a Cargo", placeholder="Ej: Mones, Frascone...")
 
     with col2:
@@ -225,46 +208,50 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
-        if len(matricula) < 5:
-            st.error("Matrícula inválida. Verifique el formato de aeronave.")
+        # La asignación se procesa al enviar el formulario de forma segura para evitar bucles en React
+        if avion_sel == "Otro / Avión Visitante":
+            matricula = "LV-UNK"  # Valor por defecto seguro para móvil si es externo
+            modelo = "Otro"
         else:
-            datetime_salida = datetime.datetime.combine(fecha, h_salida)
-            datetime_llegada = datetime.datetime.combine(fecha, h_llegada)
-            
-            if datetime_llegada < datetime_salida:
-                datetime_llegada += datetime.timedelta(days=1)
-                
-            duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
-            
-            horas_dc = round(duracion_horas, 1) if tipo_vuelo == "Doble Comando (DC)" else 0.0
-            horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
-            horas_totales = round(duracion_horas, 1)
+            matricula = FLOTA_CUA[avion_sel]["mat"]
+            modelo = FLOTA_CUA[avion_sel]["modelo"]
 
-            datos_vuelo = {
-                "Fecha": fecha.strftime("%Y-%m-%d"),
-                "Instructor": instructor,
-                "Aeronave": matricula,
-                "Modelo": modelo,
-                "Hora_Salida": h_salida.strftime("%H:%M"),
-                "Hora_Llegada": h_llegada.strftime("%H:%M"),
-                "Horas_DC": horas_dc,
-                "Horas_VS": horas_vs,
-                "Horas_Totales": horas_totales,
-                "Aterrizajes": int(aterrizajes),
-                "Leccion": leccion,
-                "Costo_ARS": float(costo_ars),
-                "Costo_USD": round(costo_usd, 2),
-                "TC": float(tc),
-                "Puntaje_Aterrizaje": int(puntaje),
-                "Anecdotario": anecdota
-            }
+        datetime_salida = datetime.datetime.combine(fecha, h_salida)
+        datetime_llegada = datetime.datetime.combine(fecha, h_llegada)
+        
+        if datetime_llegada < datetime_salida:
+            datetime_llegada += datetime.timedelta(days=1)
             
-            nuevo_registro = pd.DataFrame([datos_vuelo])
+        duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
+        
+        horas_dc = round(duracion_horas, 1) if tipo_vuelo == "Doble Comando (DC)" else 0.0
+        horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
+        horas_totales = round(duracion_horas, 1)
 
-            df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
-            conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
-            st.success(f"¡Log asentado! {horas_totales} HS añadidas a la matrícula {matricula}.")
-            st.rerun()
+        datos_vuelo = {
+            "Fecha": fecha.strftime("%Y-%m-%d"),
+            "Instructor": instructor,
+            "Aeronave": matricula,
+            "Modelo": modelo,
+            "Hora_Salida": h_salida.strftime("%H:%M"),
+            "Hora_Llegada": h_llegada.strftime("%H:%M"),
+            "Horas_DC": horas_dc,
+            "Horas_VS": horas_vs,
+            "Horas_Totales": horas_totales,
+            "Aterrizajes": int(aterrizajes),
+            "Leccion": leccion,
+            "Costo_ARS": float(costo_ars),
+            "Costo_USD": round(costo_usd, 2),
+            "TC": float(tc),
+            "Puntaje_Aterrizaje": int(puntaje),
+            "Anecdotario": anecdota
+        }
+        
+        nuevo_registro = pd.DataFrame([datos_vuelo])
+        df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
+        conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
+        st.success(f"¡Log asentado! {horas_totales} HS añadidas.")
+        st.rerun()
 
 st.markdown("---")
 
