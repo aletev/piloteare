@@ -211,7 +211,7 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     with col3:
         leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...")
         costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0)
-        tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1250.0, step=10.0)
+        tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0)
         
         costo_usd = costo_ars / tc if tc > 0 else 0.0
         st.markdown(f"<p style='color: #00FF66; margin-top: 15px;'>Costo del tramo computado: <b>USD {costo_usd:.2f}</b></p>", unsafe_allow_html=True)
