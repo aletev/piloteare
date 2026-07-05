@@ -10,28 +10,38 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS SEGURO Y OPTIMIZADO PARA MÓVILES
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (NUEVA SILUETA DESDE ARRIBA + CORRECCIÓN DE COLORES)
 st.markdown("""
     <style>
-    /* Fondo principal con la silueta en perspectiva del Cessna 172 */
+    /* Fondo principal con la silueta de planta (desde arriba) del Cessna 172 */
     .stApp {
         background-color: #1E222A;
         color: #E2E8F0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 310 197' opacity='0.04'%3E%3Cpath fill='%2300FF66' d='M297.8 2.2c-5.7 1.8-49 19.3-96.2 38.8-47.3 19.5-88.5 36.8-91.7 38.4-4.2 2.1-5.1 3-5.1 5.3 0 1.2.7 2.1 2.3 3.1 3.2 1.9 14.5 4.5 35.6 8.3 12.3 2.2 25.1 4.5 28.5 5 11.2 1.7 18.2 5.1 20 9.8.7 1.9.9 4.3.4 6.7-.8 3.3-3.4 8.2-11.4 21.4-6.4 10.6-11.8 19.8-12 20.4-.6 1.7.5 3.3 2.4 3.7 1.3.3 2.1-.1 3.5-1.7 4.1-4.8 17.5-23.7 21-29.6 1.9-3.2 3.6-5.8 3.8-5.8.1 0 4 1.9 8.5 4.2l8.2 4.1-1.2 3.8c-2.3 7-4.1 13.5-4.1 15.1 0 2.2 1.8 4.2 4.1 4.5 2 .2 3.4-.6 5-2.7 3.5-4.4 9.1-13.6 11.1-18.4l1.1-2.6 15 5.5c8.3 3 15.6 5.6 16.3 5.6.8 0 3-1.6 4.9-3.4 4.7-4.6 13.5-16.7 16-22.1 1-2 1.1-2.9.7-4.3-.8-3.1-4.7-6.9-10.7-10.3-4.5-2.5-19.1-9-33-14.7-3.2-1.3-6.1-2.6-6.4-2.8-.4-.3 1.8-3.2 4.8-6.6 6.3-7.1 11.7-13.7 14.4-17.7 5.8-8.5 6.7-11.2 4.6-13.5-1-1.1-2.6-1.9-5-2.4-1.9-.3-10-.7-23.9-1.2-11.8-.4-21.9-.9-22.3-1-.5-.2 7.7-6.9 18.2-15 17.4-13.4 35.6-27.3 40.5-30.8 12.5-9 22-16.2 22-16.7 0-.9-2-1.4-6-1.4-.8.1-2 .3-2.6.5zm-155.6 86c-13.6-2.5-31.5-5.9-39.7-7.7-17-3.7-17.2-3.7-14.5-2.6 8.3 3.5 49.3 17.6 53.6 18.5 1 .3 1-.1.6-1.2-1.1-2.9-1.1-2.9 0-7 .3-1.2.3-1.2-.6-1.4-.4-.1-1 .1-1.4.3-1.6.7-22.6 7-23.6 7-.4 0-.1-1.1.6-2.5.7-1.3 22-10 23.8-10 .7 0 1 .4 1 1.2 0 1.2-2.1 9.4-2.4 9.5-.1 0 1 .2 2.3.4s2.3.4 2.3.3c.1-.1 1-3.6 2-7.8l1.8-7.6h1.2l1.2.1-2.7 11c-1.4 6.1-2.6 11.2-2.6 11.4 0 .4-.7.3-6.5-.8zM3.4 186.2c-2.3.7-3.4 1.9-3.4 3.3 0 2.2 3.1 3.9 6.8 3.9 1.6 0 2.5-.3 6.3-1.8 13.9-5.4 75.3-30.2 119.7-48.2l30.2-12.2-1.7-1c-1-.5-6.5-2-12.3-3.2-5.7-1.3-10.7-2.5-11-2.7-.4-.3-15.6 5.5-33.8 12.7-18.2 7.3-43.2 17.2-55.5 22.1-27.2 10.9-46.7 19-48.4 19.6-1.1.3-1.5.3-1.9.5z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' opacity='0.035'%3E%3Cpath fill='%2300FF66' d='M47.5,15 L52.5,15 L52.5,16 L47.5,16 Z M41,16 L59,16 L59,16.5 L41,16.5 Z M46,16.5 L54,16.5 L55,27 L45,27 Z M2,31 L98,31 L98,42 L80,44 L53,42 L53,68 L63,71 L63,76 L51.5,76 L51.5,84 L48.5,84 L48.5,76 L37,76 L37,71 L47,68 L47,42 L20,44 L2,42 Z'/%3E%3C/svg%3E");
         background-position: center 38%;
         background-repeat: no-repeat;
-        background-size: 780px;
+        background-size: 550px;
     }
     
-    /* Etiquetas forzadas en amarillo ámbar aeronáutico de forma segura */
+    /* Etiquetas principales en amarillo ámbar */
     label, p[data-testid="stWidgetLabel"] {
         color: #FFB703 !important;
         font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.5px;
         text-transform: uppercase;
+        margin-bottom: 5px !important;
     }
     
-    /* Títulos estilo aviónica Garmin */
+    /* CORRECCIÓN PUNTO 4: Forzar a que las opciones del Radio Button se vean en AMARILLO */
+    div[data-testid="stRadio"] label p {
+        color: #FFB703 !important;
+        text-transform: none !important;
+        font-weight: 600 !important;
+    }
+
+    /* Encabezados estilo aviónica Garmin */
     h1 {
         color: #00FF66 !important;
         font-weight: 700 !important;
@@ -44,22 +54,22 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Contenedores fijos del panel */
+    /* Paneles e instrumentos */
     div[data-testid="stForm"], .stMetric {
         background-color: #282C34 !important;
         border: 2px solid #3E4451 !important;
         border-radius: 10px !important;
         padding: 20px !important;
+        box-shadow: inset 0px 0px 15px rgba(0,0,0,0.5) !important;
     }
     
-    /* Displays digitales de las métricas */
     div[data-testid="stMetricValue"] {
         color: #00FF66 !important;
         font-family: 'Courier New', monospace !important;
         font-weight: bold;
     }
     
-    /* Botón Master Execute Switch */
+    /* Botón Master Execute */
     div.stButton > button {
         background-color: #D90429 !important;
         color: white !important;
@@ -72,19 +82,18 @@ st.markdown("""
         background-color: #FF0934 !important;
     }
 
-    /* Arco verde del indicador de progreso */
     .stProgress > div > div > div > div {
         background-color: #00FF66 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 🎫 PLACA DE IDENTIFICACIÓN COCKPIT (LV-ALE)
+# 🎫 PLACA DE IDENTIFICACIÓN COCKPIT (Actualizada sin LV-ALE del club, de marca fija)
 st.markdown("""
     <div style="float: right; background: #111; border: 2px solid #555; 
                 padding: 5px 15px; border-radius: 4px; font-family: monospace; color: #FFF; 
                 font-weight: bold; letter-spacing: 2px; font-size: 1rem; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); margin-top: 10px;">
-        AIRCRAFT ID: <span style="color: #FFB703;">LV-ALE</span>
+        FLIGHT LOG SYSTEM
     </div>
 """, unsafe_allow_html=True)
 
@@ -103,9 +112,8 @@ except Exception as e:
     st.error("Error al conectar con la Aviónica de Google Sheets.")
     df_existente = pd.DataFrame()
 
-# 5. 🛩️ FLOTA REAL DEL CUA
+# 5. 🛩️ FLOTA REAL DEL CUA (PUNTO 3: REMOVIDO LV-ALE)
 FLOTA_CUA = {
-    "LV-ALE (Mi Matrícula Cessna)": {"modelo": "Cessna 172", "mat": "LV-ALE"},
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
     "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
@@ -147,8 +155,22 @@ else:
 
 st.markdown("---")
 
-# --- FORMULARIO DE REGISTRO LIMPIO Y SEGURO ---
+# --- SECCIÓN FORMULARIO DE REGISTRO ---
 st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
+
+# PUNTO 2: Lógica de horas editables libremente por fuera del st.form para evitar congelamientos en React
+col_h1, col_h2 = st.columns(2)
+with col_h1:
+    # Ingreso manual de texto para permitir minutos exactos (ej: 10:07)
+    str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00")
+with col_h2:
+    # Por defecto calcula +1 hora del string ingresado arriba para agilizar la carga
+    try:
+        dt_s = datetime.datetime.strptime(str_salida, "%H:%M")
+        dt_ll_default = (dt_s + datetime.timedelta(hours=1)).strftime("%H:%M")
+    except:
+        dt_ll_default = "11:00"
+    str_llegada = st.text_input("Hora Corte de Motor (Formato HH:MM)", value=dt_ll_default)
 
 with st.form("vuelo_oficial_form", clear_on_submit=True):
     col1, col2, col3 = st.columns(3)
@@ -159,14 +181,15 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
         instructor = st.text_input("Instructor a Cargo", placeholder="Ej: Mones, Frascone...")
 
     with col2:
-        h_salida = st.time_input("Hora de Puesta en Marcha (Bloque)", datetime.time(10, 0))
-        h_llegada = st.time_input("Hora de Corte de Motor (Bloque)", datetime.time(11, 0))
         tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"])
         aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1)
+        # PUNTO 5: Campo de Meteorología añadido
+        meteorologia = st.text_input("Meteorología / Condiciones", placeholder="Ej: VFR, CAVOK, Viento 120/05KT")
 
     with col3:
         leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...")
         costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0)
+        # PUNTO 1: Tipo de cambio actualizado por defecto a 1510.0
         tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0)
         
         costo_usd = costo_ars / tc if tc > 0 else 0.0
@@ -174,24 +197,26 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
 
     st.markdown("##### 💭 BITÁCORA EMOCIONAL Y ANECDOTARIO")
     puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
-    anecdota = st.text_area("Sensaciones al mando, meteorología, viento cruzado o hitos del día...")
+    anecdota = st.text_area("Sensaciones al mando o hitos del día...")
 
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
-        # Lógica de asignación plana pos-submit (Cero interferencias de React al renderizar)
-        if avion_sel == "Otro / Avión Visitante":
-            matricula = "LV-UNK"
-            modelo = "Otro"
-        else:
-            matricula = FLOTA_CUA[avion_sel]["mat"]
-            modelo = FLOTA_CUA[avion_sel]["modelo"]
+        # Validación de parseo de horas ingresadas textualmente
+        try:
+            t_salida = datetime.datetime.strptime(str_salida.strip(), "%H:%M").time()
+            t_llegada = datetime.datetime.strptime(str_llegada.strip(), "%H:%M").time()
+        except:
+            st.error("Error en formato de horas. Asegurate de usar HH:MM (ejemplo: 10:07).")
+            st.stop()
 
-        datetime_salida = datetime.datetime.combine(fecha, h_salida)
-        datetime_llegada = datetime.datetime.combine(fecha, h_llegada)
+        datetime_salida = datetime.datetime.combine(fecha, t_salida)
+        datetime_llegada = datetime.datetime.combine(fecha, t_llegada)
         
-        if datetime_llegada < datetime_salida:
-            datetime_llegada += datetime.timedelta(days=1)
+        # PUNTO 2: Validación de que la llegada siempre sea mayor que la salida
+        if datetime_llegada <= datetime_salida:
+            st.error("Error operacional: La hora de Corte de Motor tiene que ser posterior a la de Puesta en Marcha.")
+            st.stop()
             
         duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
         
@@ -199,13 +224,21 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
         horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
         horas_totales = round(duracion_horas, 1)
 
+        if avion_sel == "Otro / Avión Visitante":
+            matricula = "LV-UNK"
+            modelo = "Otro"
+        else:
+            matricula = FLOTA_CUA[avion_sel]["mat"]
+            modelo = FLOTA_CUA[avion_sel]["modelo"]
+
+        # Armado de fila incluyendo la nueva columna de meteorología
         datos_vuelo = {
             "Fecha": fecha.strftime("%Y-%m-%d"),
             "Instructor": instructor,
             "Aeronave": matricula,
             "Modelo": modelo,
-            "Hora_Salida": h_salida.strftime("%H:%M"),
-            "Hora_Llegada": h_llegada.strftime("%H:%M"),
+            "Hora_Salida": t_salida.strftime("%H:%M"),
+            "Hora_Llegada": t_llegada.strftime("%H:%M"),
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales,
@@ -215,13 +248,14 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
             "Costo_USD": round(costo_usd, 2),
             "TC": float(tc),
             "Puntaje_Aterrizaje": int(puntaje),
-            "Anecdotario": anecdota
+            "Anecdotario": anecdota,
+            "Meteorologia": meteorologia
         }
         
         nuevo_registro = pd.DataFrame([datos_vuelo])
         df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
         conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
-        st.success(f"¡Log asentado! {horas_totales} HS añadidas.")
+        st.success(f"¡Log asentado! {horas_totales} HS añadidas de forma segura.")
         st.rerun()
 
 st.markdown("---")
