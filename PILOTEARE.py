@@ -64,7 +64,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* Botón en el mismo amarillo del texto con letras oscuras para contraste */
     div.stButton > button {
         background-color: #FFB703 !important;
         color: #1E222A !important;
@@ -118,20 +117,11 @@ try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_existente = conn.read(spreadsheet=URL_PLANILLA, ttl="0m")
     
-    # Intentar leer la pestaña de hitos, si falla creamos una por defecto
+    # Intentar leer la pestaña de hitos, si falla inicializamos un DataFrame seguro
     try:
         df_hitos = conn.read(spreadsheet=URL_PLANILLA, worksheet="Hitos", ttl="0m")
     except:
-        # Dataframe de Hitos guarda ahora la FECHA del logro (o texto vacío si no se cumplió)
-        hitos_iniciales = {
-            "hito_primer_vuelo": [""],
-            "hito_ochos": [""],
-            "hito_vuelo_solo": [""],
-            "hito_navegacion": [""],
-            "hito_nocturno": [""],
-            "hito_examen": [""]
-        }
-        df_hitos = pd.DataFrame(hitos_iniciales)
+        df_hitos = pd.DataFrame()
 except Exception as e:
     st.error("Error al conectar con la Aviónica de Google Sheets.")
     df_existente = pd.DataFrame()
@@ -293,14 +283,85 @@ if puntaje <= 5:
         "El tacómetro del Cessna estaba descalibrado y alteró mi percepción de la velocidad.",
         "Culpa del efecto suelo (Ground Effect) que no me dejó plancharlo.",
         "El neumático del tren principal derecho tenía 2 PSI de menos.",
-        "Estaba practicando un aterrizaje de campo corto simulado con actitud agresiva.",
+        "Estaba PRACTICANDO un aterrizaje de campo corto simulado con actitud agresiva.",
         "El instructor me tocó los comandos en el último segundo, lo juro."
     ]
     excusa_del_dia = random.choice(excusas_piloto)
     st.markdown(f"⚠️ *Nota del Comandante para el anecdotario:* `{excusa_del_dia}`")
 
-# --- SECCIÓN: HITOS DEL CURSO CON PERSISTENCIA DE FECHAS EN LA NUBE ---
+# --- SECCIÓN: HITOS DEL CURSO CON PERSISTENCIA SEGURA ANTIFALLAS ---
 st.markdown("### 🏅 MIS GRANDES HITOS AERONÁUTICOS")
 
-# Extraer el valor de celda (si tiene longitud > 0 significa que tiene una fecha guardada, por ende True)
-f_vuelo
+# 🛡️ VALIDACIÓN DE ARQUITECTURA: Extraer datos de forma segura solo si las columnas reales existen
+f_vuelo = str(df_hitos.at[0, "hito_primer_vuelo"]).strip() if (not df_hitos.empty and "hito_primer_vuelo" in df_hitos.columns) else ""
+f_ochos = str(df_hitos.at[0, "hito_ochos"]).strip() if (not df_hitos.empty and "hito_ochos" in df_hitos.columns) else ""
+f_solo = str(df_hitos.at[0, "hito_vuelo_solo"]).strip() if (not df_hitos.empty and "hito_vuelo_solo" in df_hitos.columns) else ""
+f_nav = str(df_hitos.at[0, "hito_navegacion"]).strip() if (not df_hitos.empty and "hito_navegacion" in df_hitos.columns) else ""
+f_noc = str(df_hitos.at[0, "hito_nocturno"]).strip() if (not df_hitos.empty and "hito_nocturno" in df_hitos.columns) else ""
+f_ex = str(df_hitos.at[0, "hito_examen"]).strip() if (not df_hitos.empty and "hito_examen" in df_hitos.columns) else ""
+
+# Evaluar si están marcados basándose en si contienen strings de texto de fecha válidos
+h_vuelo = f_vuelo != "" and f_vuelo != "nan"
+h_ochos = f_ochos != "" and f_ochos != "nan"
+h_solo = f_solo != "" and f_solo != "nan"
+h_nav = f_nav != "" and f_nav != "nan"
+h_noc = f_noc != "" and f_noc != "nan"
+h_ex = f_ex != "" and f_ex != "nan"
+
+# Crear etiquetas dinámicas que incluyan la fecha del logro si ya está tildado
+lbl_vuelo = f"🚀 Primer Despegue ({f_vuelo})" if h_vuelo else "🚀 Primer Despegue"
+lbl_ochos = f"🔄 Dominio de Ochos ({f_ochos})" if h_ochos else "🔄 Dominio de Ochos alrededor de un punto"
+lbl_solo = f"🦅 ¡PRIMER VUELO SOLO! ({f_solo})" if h_solo else "🦅 ¡PRIMER VUELO SOLO! (Corte de camisa)"
+lbl_nav = f"🗺️ Primera Navegación ({f_nav})" if h_nav else "🗺️ Primera Navegación (Salida CTR)"
+lbl_noc = f"🌙 Primer Vuelo Nocturno ({f_noc})" if h_noc else "🌙 Primer Vuelo Nocturno"
+lbl_ex = f"👨‍✈️ ¡EXAMEN ANAC APROBADO! ({f_ex})" if h_ex else "👨‍✈️ ¡EXAMEN ANAC APROBADO! (PPA)"
+
+with st.container():
+    col_hito1, col_hito2, col_hito3 = st.columns(3)
+    
+    with col_hito1:
+        v_vuelo = st.checkbox(lbl_vuelo, value=h_vuelo, key="chk_vuelo")
+        v_ochos = st.checkbox(lbl_ochos, value=h_ochos, key="chk_ochos")
+    with col_hito2:
+        v_solo = st.checkbox(lbl_solo, value=h_solo, key="chk_solo")
+        v_nav = st.checkbox(lbl_nav, value=h_nav, key="chk_nav")
+    with col_hito3:
+        v_noc = st.checkbox(lbl_noc, value=h_noc, key="chk_noc")
+        v_ex = st.checkbox(lbl_ex, value=h_ex, key="chk_ex")
+
+    # Si el estado de la UI cambió respecto a lo guardado en Sheets, actualizamos inmediatamente
+    if (v_vuelo != h_vuelo or v_ochos != h_ochos or v_solo != h_solo or 
+        v_nav != h_nav or v_noc != h_noc or v_ex != h_ex):
+        
+        hoy_str = datetime.date.today().strftime("%Y-%m-%d")
+        
+        df_nuevos_hitos = pd.DataFrame([{
+            "hito_primer_vuelo": hoy_str if v_vuelo else "",
+            "hito_ochos": hoy_str if v_ochos else "",
+            "hito_vuelo_solo": hoy_str if v_solo else "",
+            "hito_navegacion": hoy_str if v_nav else "",
+            "hito_nocturno": hoy_str if v_noc else "",
+            "hito_examen": hoy_str if v_ex else ""
+        }])
+        
+        try:
+            conn.update(spreadsheet=URL_PLANILLA, worksheet="Hitos", data=df_nuevos_hitos)
+            st.toast("🏅 ¡Tablero de hitos histórico actualizado!", icon="💾")
+            st.rerun()
+        except Exception as e:
+            st.warning("Hito cambiado localmente. Recordá crear la pestaña 'Hitos' en tu Google Sheet para persistir las fechas.")
+
+st.markdown("---")
+
+# --- SECCIÓN HISTORIAL ORDENADO ---
+st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
+if not df_existente.empty:
+    df_display = df_existente.copy()
+    
+    if "LogNro" in df_display.columns:
+        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
+        df_display = df_display.sort_values(by="LogNro", ascending=False)
+    else:
+        df_display = df_display.sort_values(by="Fecha", ascending=False)
+        
+    st.dataframe(df_display, use_container_width=True)
