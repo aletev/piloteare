@@ -10,10 +10,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (NUEVA SILUETA DESDE ARRIBA + CORRECCIÓN DE COLORES)
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (SILUETA CESSNA 172 EN PERSPECTIVA)
 st.markdown("""
     <style>
-    /* Fondo principal con la silueta de planta (desde arriba) del Cessna 172 */
     .stApp {
         background-color: #1E222A;
         color: #E2E8F0;
@@ -24,7 +23,6 @@ st.markdown("""
         background-size: 550px;
     }
     
-    /* Etiquetas principales en amarillo ámbar */
     label, p[data-testid="stWidgetLabel"] {
         color: #FFB703 !important;
         font-weight: 600 !important;
@@ -34,14 +32,12 @@ st.markdown("""
         margin-bottom: 5px !important;
     }
     
-    /* CORRECCIÓN PUNTO 4: Forzar a que las opciones del Radio Button se vean en AMARILLO */
     div[data-testid="stRadio"] label p {
         color: #FFB703 !important;
         text-transform: none !important;
         font-weight: 600 !important;
     }
 
-    /* Encabezados estilo aviónica Garmin */
     h1 {
         color: #00FF66 !important;
         font-weight: 700 !important;
@@ -54,7 +50,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Paneles e instrumentos */
     div[data-testid="stForm"], .stMetric {
         background-color: #282C34 !important;
         border: 2px solid #3E4451 !important;
@@ -69,7 +64,6 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* Botón Master Execute */
     div.stButton > button {
         background-color: #D90429 !important;
         color: white !important;
@@ -88,7 +82,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🎫 PLACA DE IDENTIFICACIÓN COCKPIT (Actualizada sin LV-ALE del club, de marca fija)
 st.markdown("""
     <div style="float: right; background: #111; border: 2px solid #555; 
                 padding: 5px 15px; border-radius: 4px; font-family: monospace; color: #FFF; 
@@ -112,7 +105,7 @@ except Exception as e:
     st.error("Error al conectar con la Aviónica de Google Sheets.")
     df_existente = pd.DataFrame()
 
-# 5. 🛩️ FLOTA REAL DEL CUA (PUNTO 3: REMOVIDO LV-ALE)
+# 5. 🛩️ FLOTA REAL DEL CUA
 FLOTA_CUA = {
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
@@ -158,13 +151,10 @@ st.markdown("---")
 # --- SECCIÓN FORMULARIO DE REGISTRO ---
 st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
 
-# PUNTO 2: Lógica de horas editables libremente por fuera del st.form para evitar congelamientos en React
 col_h1, col_h2 = st.columns(2)
 with col_h1:
-    # Ingreso manual de texto para permitir minutos exactos (ej: 10:07)
     str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00")
 with col_h2:
-    # Por defecto calcula +1 hora del string ingresado arriba para agilizar la carga
     try:
         dt_s = datetime.datetime.strptime(str_salida, "%H:%M")
         dt_ll_default = (dt_s + datetime.timedelta(hours=1)).strftime("%H:%M")
@@ -183,13 +173,11 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     with col2:
         tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"])
         aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1)
-        # PUNTO 5: Campo de Meteorología añadido
         meteorologia = st.text_input("Meteorología / Condiciones", placeholder="Ej: VFR, CAVOK, Viento 120/05KT")
 
     with col3:
         leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...")
         costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0)
-        # PUNTO 1: Tipo de cambio actualizado por defecto a 1510.0
         tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0)
         
         costo_usd = costo_ars / tc if tc > 0 else 0.0
@@ -202,7 +190,6 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
-        # Validación de parseo de horas ingresadas textualmente
         try:
             t_salida = datetime.datetime.strptime(str_salida.strip(), "%H:%M").time()
             t_llegada = datetime.datetime.strptime(str_llegada.strip(), "%H:%M").time()
@@ -213,7 +200,6 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
         datetime_salida = datetime.datetime.combine(fecha, t_salida)
         datetime_llegada = datetime.datetime.combine(fecha, t_llegada)
         
-        # PUNTO 2: Validación de que la llegada siempre sea mayor que la salida
         if datetime_llegada <= datetime_salida:
             st.error("Error operacional: La hora de Corte de Motor tiene que ser posterior a la de Puesta en Marcha.")
             st.stop()
@@ -231,8 +217,15 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
             matricula = FLOTA_CUA[avion_sel]["mat"]
             modelo = FLOTA_CUA[avion_sel]["modelo"]
 
-        # Armado de fila incluyendo la nueva columna de meteorología
+        # 🔢 LÓGICA DE CÁLCULO PARA EL SECUENCIAL AUTOMÁTICO
+        if not df_existente.empty and "LogNro" in df_existente.columns:
+            # Convierte la columna a numérico por seguridad y busca el valor más alto
+            proximo_log = int(pd.to_numeric(df_existente["LogNro"], errors='coerce').max() + 1)
+        else:
+            proximo_log = 1
+
         datos_vuelo = {
+            "LogNro": proximo_log,
             "Fecha": fecha.strftime("%Y-%m-%d"),
             "Instructor": instructor,
             "Aeronave": matricula,
@@ -255,14 +248,21 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
         nuevo_registro = pd.DataFrame([datos_vuelo])
         df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
         conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
-        st.success(f"¡Log asentado! {horas_totales} HS añadidas de forma segura.")
+        st.success(f"¡Log Nro {proximo_log} asentado! {horas_totales} HS añadidas de forma segura.")
         st.rerun()
 
 st.markdown("---")
 
-# --- SECCIÓN HISTORIAL ---
+# --- SECCIÓN HISTORIAL ORDENADO CORRETAJE ---
 st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
 if not df_existente.empty:
     df_display = df_existente.copy()
-    df_display = df_display.sort_values(by="Fecha", ascending=False)
+    
+    # 📑 ORDENAMIENTO POR EL SECUENCIAL LOGNRO (El más nuevo arriba)
+    if "LogNro" in df_display.columns:
+        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
+        df_display = df_display.sort_values(by="LogNro", ascending=False)
+    else:
+        df_display = df_display.sort_values(by="Fecha", ascending=False)
+        
     st.dataframe(df_display, use_container_width=True)
