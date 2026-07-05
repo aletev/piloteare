@@ -213,4 +213,60 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
             
         duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
         
-        horas_dc = round(duracion_horas, 1) if tipo_vuelo ==
+        horas_dc = round(duracion_horas, 1) if tipo_vuelo == "Doble Comando (DC)" else 0.0
+        horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
+        horas_totales = round(duracion_horas, 1)
+
+        if avion_sel == "Otro / Avión Visitante":
+            matricula = "LV-UNK"
+            modelo = "Otro"
+        else:
+            matricula = FLOTA_CUA[avion_sel]["mat"]
+            modelo = FLOTA_CUA[avion_sel]["modelo"]
+
+        if not df_existente.empty and "LogNro" in df_existente.columns:
+            proximo_log = int(pd.to_numeric(df_existente["LogNro"], errors='coerce').max() + 1)
+        else:
+            proximo_log = 1
+
+        datos_vuelo = {
+            "LogNro": proximo_log,
+            "Fecha": fecha.strftime("%Y-%m-%d"),
+            "Instructor": instructor,
+            "Aeronave": matricula,
+            "Modelo": modelo,
+            "Hora_Salida": t_salida.strftime("%H:%M"),
+            "Hora_Llegada": t_llegada.strftime("%H:%M"),
+            "Horas_DC": horas_dc,
+            "Horas_VS": horas_vs,
+            "Horas_Totales": horas_totales,
+            "Aterrizajes": int(aterrizajes),
+            "Leccion": leccion,
+            "Costo_ARS": float(costo_ars),
+            "Costo_USD": round(costo_usd, 2),
+            "TC": float(tc),
+            "Puntaje_Aterrizaje": int(puntaje),
+            "Anecdotario": anecdota,
+            "Meteorologia": meteorologia
+        }
+        
+        nuevo_registro = pd.DataFrame([datos_vuelo])
+        df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
+        conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
+        st.success(f"¡Log Nro {proximo_log} asentado! {horas_totales} HS añadidas de forma segura.")
+        st.rerun()
+
+st.markdown("---")
+
+# --- SECCIÓN HISTORIAL ORDENADO ---
+st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
+if not df_existente.empty:
+    df_display = df_existente.copy()
+    
+    if "LogNro" in df_display.columns:
+        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
+        df_display = df_display.sort_values(by="LogNro", ascending=False)
+    else:
+        df_display = df_display.sort_values(by="Fecha", ascending=False)
+        
+    st.dataframe(df_display, use_container_width=True)
