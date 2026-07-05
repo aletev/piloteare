@@ -117,9 +117,25 @@ URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoV
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_existente = conn.read(spreadsheet=URL_PLANILLA, ttl="0m")
+    
+    # Intentar leer la pestaña de hitos, si falla creamos una por defecto
+    try:
+        df_hitos = conn.read(spreadsheet=URL_PLANILLA, worksheet="Hitos", ttl="0m")
+    except:
+        # Dataframe de Hitos guarda ahora la FECHA del logro (o texto vacío si no se cumplió)
+        hitos_iniciales = {
+            "hito_primer_vuelo": [""],
+            "hito_ochos": [""],
+            "hito_vuelo_solo": [""],
+            "hito_navegacion": [""],
+            "hito_nocturno": [""],
+            "hito_examen": [""]
+        }
+        df_hitos = pd.DataFrame(hitos_iniciales)
 except Exception as e:
     st.error("Error al conectar con la Aviónica de Google Sheets.")
     df_existente = pd.DataFrame()
+    df_hitos = pd.DataFrame()
 
 # 5. 🛩️ FLOTA REAL DEL CUA
 FLOTA_CUA = {
@@ -283,29 +299,8 @@ if puntaje <= 5:
     excusa_del_dia = random.choice(excusas_piloto)
     st.markdown(f"⚠️ *Nota del Comandante para el anecdotario:* `{excusa_del_dia}`")
 
-# --- SECCIÓN: HITOS DEL CURSO ---
+# --- SECCIÓN: HITOS DEL CURSO CON PERSISTENCIA DE FECHAS EN LA NUBE ---
 st.markdown("### 🏅 MIS GRANDES HITOS AERONÁUTICOS")
-with st.container():
-    col_hito1, col_hito2, col_hito3 = st.columns(3)
-    with col_hito1:
-        st.checkbox("🚀 Primer Despegue (6 de Julio)", key="hito_primer_vuelo")
-        st.checkbox("🔄 Dominio de Ochos alrededor de un punto", key="hito_ochos")
-    with col_hito2:
-        st.checkbox("🦅 ¡PRIMER VUELO SOLO! (Tradicional corte de camisa)", key="hito_vuelo_solo")
-        st.checkbox("🗺️ Primera Navegación (Salida del CTR Ezeiza)", key="hito_navegacion")
-    with col_hito3:
-        st.checkbox("🌙 Primer Vuelo Nocturno", key="hito_nocturno")
-        st.checkbox("👨‍✈️ ¡EXAMEN ANAC APROBADO! (Piloto Privado)", key="hito_examen")
 
-# --- SECCIÓN HISTORIAL ORDENADO ---
-st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
-if not df_existente.empty:
-    df_display = df_existente.copy()
-    
-    if "LogNro" in df_display.columns:
-        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
-        df_display = df_display.sort_values(by="LogNro", ascending=False)
-    else:
-        df_display = df_display.sort_values(by="Fecha", ascending=False)
-        
-    st.dataframe(df_display, use_container_width=True)
+# Extraer el valor de celda (si tiene longitud > 0 significa que tiene una fecha guardada, por ende True)
+f_vuelo
