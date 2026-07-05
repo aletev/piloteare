@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (DISEÑO COCKPIT + BOTÓN EN AMARILLO)
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (DISEÑO COCKPIT + AMARILLOS + HITOS EN VERDE)
 st.markdown("""
     <style>
     .stApp {
@@ -64,7 +64,7 @@ st.markdown("""
         font-weight: bold;
     }
     
-    /* CAMBIO SOLICITADO: Botón en el mismo amarillo del texto con letras oscuras para contraste */
+    /* Botón en el mismo amarillo del texto con letras oscuras para contraste */
     div.stButton > button {
         background-color: #FFB703 !important;
         color: #1E222A !important;
@@ -85,19 +85,18 @@ st.markdown("""
     .stProgress > div > div > div > div {
         background-color: #00FF66 !important;
     }
-    </style>
 
-/* Color verde llamativo para el título de los Hitos */
+    /* 🟢 CORRECCIÓN: Estilos de Hitos reincorporados adentro del tag style */
     #mis-grandes-hitos-aeronauticos {
         color: #00FF66 !important;
         text-shadow: 0px 0px 8px rgba(0, 255, 102, 0.3);
     }
 
-    /* Forzar a que el texto de los checkboxes de los Hitos se vea en VERDE */
     div[data-testid="stCheckbox"] label p {
         color: #00FF66 !important;
         font-weight: 600 !important;
     }
+    </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
@@ -205,7 +204,6 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
     anecdota = st.text_area("Sensaciones al mando o hitos del día...")
 
-    # Botón modificado con look amarillo unificado
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
@@ -274,41 +272,4 @@ import random
 
 # --- SECCIÓN: GENERADOR DE EXCUSAS ---
 if puntaje <= 5:
-    excusas_piloto = [
-        "Había una térmica invisible justo en el umbral de pista.",
-        "Cizalladura de viento (Windshear) inesperada de baja intensidad.",
-        "El tacómetro del Cessna estaba descalibrado y alteró mi percepción de la velocidad.",
-        "Culpa del efecto suelo (Ground Effect) que no me dejó plancharlo.",
-        "El neumático del tren principal derecho tenía 2 PSI de menos.",
-        "Estaba practicando un aterrizaje de campo corto simulado con actitud agresiva.",
-        "El instructor me tocó los comandos en el último segundo, lo juro."
-    ]
-    excusa_del_dia = random.choice(excusas_piloto)
-    st.markdown(f"⚠️ *Nota del Comandante para el anecdotario:* `{excusa_del_dia}`")
-
-# --- SECCIÓN: HITOS DEL CURSO (DEBAJO DEL FORMULARIO) ---
-st.markdown("### 🏅 MIS GRANDES HITOS AERONÁUTICOS")
-with st.container():
-    col_hito1, col_hito2, col_hito3 = st.columns(3)
-    with col_hito1:
-        st.checkbox("🚀 Primer Despegue (8 de Julio)", key="hito_primer_vuelo")
-        st.checkbox("🔄 Dominio de Ochis alrededor de un punto", key="hito_ochos")
-    with col_hito2:
-        st.checkbox("🦅 ¡PRIMER VUELO SOLO! (Tradicional corte de camisa)", key="hito_vuelo_solo")
-        st.checkbox("🗺️ Primera Navegación (Salida del CTR Ezeiza)", key="hito_navegacion")
-    with col_hito3:
-        st.checkbox("🌙 Primer Vuelo Nocturno", key="hito_nocturno")
-        st.checkbox("👨‍✈️ ¡EXAMEN ANAC APROBADO! (Piloto Privado)", key="hito_examen")
-
-# --- SECCIÓN HISTORIAL ORDENADO ---
-st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
-if not df_existente.empty:
-    df_display = df_existente.copy()
-    
-    if "LogNro" in df_display.columns:
-        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
-        df_display = df_display.sort_values(by="LogNro", ascending=False)
-    else:
-        df_display = df_display.sort_values(by="Fecha", ascending=False)
-        
-    st.dataframe(df_display, use_container_width=True)
+    excusas_piloto =
