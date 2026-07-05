@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (SILUETA CESSNA 172 EN PERSPECTIVA)
+# 2. 🌌 INYECCIÓN DE CSS AVANZADO (DISEÑO COCKPIT + BOTÓN EN AMARILLO)
 st.markdown("""
     <style>
     .stApp {
@@ -64,16 +64,22 @@ st.markdown("""
         font-weight: bold;
     }
     
+    /* CAMBIO SOLICITADO: Botón en el mismo amarillo del texto con letras oscuras para contraste */
     div.stButton > button {
-        background-color: #D90429 !important;
-        color: white !important;
+        background-color: #FFB703 !important;
+        color: #1E222A !important;
         font-weight: bold !important;
         text-transform: uppercase;
-        border: 2px solid #B80320 !important;
+        border: 2px solid #E0A200 !important;
+        box-shadow: 0px 4px 10px rgba(255, 183, 3, 0.2) !important;
+        transition: all 0.2s ease;
         width: 100%;
     }
     div.stButton > button:hover {
-        background-color: #FF0934 !important;
+        background-color: #FFC933 !important;
+        color: #000000 !important;
+        transform: scale(1.01);
+        box-shadow: 0px 4px 15px rgba(255, 183, 3, 0.4) !important;
     }
 
     .stProgress > div > div > div > div {
@@ -173,7 +179,7 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     with col2:
         tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"])
         aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1)
-        meteorologia = st.text_input("Meteorología / Condiciones", placeholder="Ej: VFR, CAVOK, Viento 120/05KT")
+        meteorologia = st.text_input("Meteorología / Conditions", placeholder="Ej: VFR, CAVOK, Viento 120/05KT")
 
     with col3:
         leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...")
@@ -187,6 +193,7 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
     puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
     anecdota = st.text_area("Sensaciones al mando o hitos del día...")
 
+    # Botón modificado con look amarillo unificado
     btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
 
     if btn_guardar:
@@ -206,63 +213,4 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
             
         duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
         
-        horas_dc = round(duracion_horas, 1) if tipo_vuelo == "Doble Comando (DC)" else 0.0
-        horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
-        horas_totales = round(duracion_horas, 1)
-
-        if avion_sel == "Otro / Avión Visitante":
-            matricula = "LV-UNK"
-            modelo = "Otro"
-        else:
-            matricula = FLOTA_CUA[avion_sel]["mat"]
-            modelo = FLOTA_CUA[avion_sel]["modelo"]
-
-        # 🔢 LÓGICA DE CÁLCULO PARA EL SECUENCIAL AUTOMÁTICO
-        if not df_existente.empty and "LogNro" in df_existente.columns:
-            # Convierte la columna a numérico por seguridad y busca el valor más alto
-            proximo_log = int(pd.to_numeric(df_existente["LogNro"], errors='coerce').max() + 1)
-        else:
-            proximo_log = 1
-
-        datos_vuelo = {
-            "LogNro": proximo_log,
-            "Fecha": fecha.strftime("%Y-%m-%d"),
-            "Instructor": instructor,
-            "Aeronave": matricula,
-            "Modelo": modelo,
-            "Hora_Salida": t_salida.strftime("%H:%M"),
-            "Hora_Llegada": t_llegada.strftime("%H:%M"),
-            "Horas_DC": horas_dc,
-            "Horas_VS": horas_vs,
-            "Horas_Totales": horas_totales,
-            "Aterrizajes": int(aterrizajes),
-            "Leccion": leccion,
-            "Costo_ARS": float(costo_ars),
-            "Costo_USD": round(costo_usd, 2),
-            "TC": float(tc),
-            "Puntaje_Aterrizaje": int(puntaje),
-            "Anecdotario": anecdota,
-            "Meteorologia": meteorologia
-        }
-        
-        nuevo_registro = pd.DataFrame([datos_vuelo])
-        df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
-        conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
-        st.success(f"¡Log Nro {proximo_log} asentado! {horas_totales} HS añadidas de forma segura.")
-        st.rerun()
-
-st.markdown("---")
-
-# --- SECCIÓN HISTORIAL ORDENADO CORRETAJE ---
-st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
-if not df_existente.empty:
-    df_display = df_existente.copy()
-    
-    # 📑 ORDENAMIENTO POR EL SECUENCIAL LOGNRO (El más nuevo arriba)
-    if "LogNro" in df_display.columns:
-        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
-        df_display = df_display.sort_values(by="LogNro", ascending=False)
-    else:
-        df_display = df_display.sort_values(by="Fecha", ascending=False)
-        
-    st.dataframe(df_display, use_container_width=True)
+        horas_dc = round(duracion_horas, 1) if tipo_vuelo ==
