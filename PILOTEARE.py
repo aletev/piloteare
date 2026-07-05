@@ -86,6 +86,18 @@ st.markdown("""
         background-color: #00FF66 !important;
     }
     </style>
+
+/* Color verde llamativo para el título de los Hitos */
+    #mis-grandes-hitos-aeronauticos {
+        color: #00FF66 !important;
+        text-shadow: 0px 0px 8px rgba(0, 255, 102, 0.3);
+    }
+
+    /* Forzar a que el texto de los checkboxes de los Hitos se vea en VERDE */
+    div[data-testid="stCheckbox"] label p {
+        color: #00FF66 !important;
+        font-weight: 600 !important;
+    }
 """, unsafe_allow_html=True)
 
 st.markdown("""
