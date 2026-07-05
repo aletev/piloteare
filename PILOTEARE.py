@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 import datetime
+import random
 
 # 1. 🎨 CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
@@ -97,6 +98,23 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 🔐 3. CONTROL DE ACCESO (LOGIN BÁSICO SENSITIVO)
+# Definimos la clave en los secretos de Streamlit (.streamlit/secrets.toml) o una por defecto
+CLAVE_ADMIN = st.secrets.get("ADMIN_PASSWORD", "ale123") 
+
+with st.sidebar:
+    st.markdown("### 🎛️ PANEL DE ACCESO")
+    password_input = st.text_input("Clave de Comandante (Admin)", type="password", help="Ingresá la clave para habilitar la edición de datos.")
+    
+    if password_input == CLAVE_ADMIN:
+        es_admin = True
+        st.success("👨‍✈️ Modo Capitán: EDICIÓN HABILITADA")
+    else:
+        es_admin = False
+        if password_input != "":
+            st.error("❌ Código incorrecto")
+        st.info("👀 Modo Invitado: SOLO LECTURA")
+
 st.markdown("""
     <div style="float: right; background: #111; border: 2px solid #555; 
                 padding: 5px 15px; border-radius: 4px; font-family: monospace; color: #FFF; 
@@ -105,19 +123,18 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 3. 🗺️ TITULAR DE LA APP
+# 4. 🗺️ TITULAR DE LA APP
 st.markdown('<h1 style="text-align: center; margin-bottom: 20px;">🛩 ... Bitacora de vuelo de Ale ...</h1>', unsafe_allow_html=True)
 st.markdown('<p style="text-align: center; color: #9CA3AF; margin-top: -15px;">SISTEMA DE GESTIÓN DE HORAS Y BITÁCORA EMOCIONAL - CUA</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-# 4. 🔗 CONEXIÓN CON GOOGLE SHEETS
+# 5. 🔗 CONEXIÓN CON GOOGLE SHEETS
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_existente = conn.read(spreadsheet=URL_PLANILLA, ttl="0m")
     
-    # Intentar leer la pestaña de hitos, si falla inicializamos un DataFrame seguro
     try:
         df_hitos = conn.read(spreadsheet=URL_PLANILLA, worksheet="Hitos", ttl="0m")
     except:
@@ -127,7 +144,7 @@ except Exception as e:
     df_existente = pd.DataFrame()
     df_hitos = pd.DataFrame()
 
-# 5. 🛩️ FLOTA REAL DEL CUA
+# 6. 🛩️ FLOTA REAL DEL CUA
 FLOTA_CUA = {
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
@@ -170,48 +187,51 @@ else:
 
 st.markdown("---")
 
-# --- SECCIÓN FORMULARIO DE REGISTRO ---
+# --- SECCIÓN FORMULARIO DE REGISTRO (CON ACCESO RESTRINGIDO) ---
 st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
+
+if not es_admin:
+    st.warning("🔒 El formulario de carga de horas está deshabilitado en Modo Demo/Invitado. Ingresá la clave en la barra lateral para editar.")
 
 col_h1, col_h2 = st.columns(2)
 with col_h1:
-    str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00")
+    str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00", disabled=not es_admin)
 with col_h2:
     try:
         dt_s = datetime.datetime.strptime(str_salida, "%H:%M")
         dt_ll_default = (dt_s + datetime.timedelta(hours=1)).strftime("%H:%M")
     except:
         dt_ll_default = "11:00"
-    str_llegada = st.text_input("Hora Corte de Motor (Formato HH:MM)", value=dt_ll_default)
+    str_llegada = st.text_input("Hora Corte de Motor (Formato HH:MM)", value=dt_ll_default, disabled=not es_admin)
 
 with st.form("vuelo_oficial_form", clear_on_submit=True):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        fecha = st.date_input("Fecha del Vuelo", datetime.date.today())
-        avion_sel = st.selectbox("Selección de Aeronave", list(FLOTA_CUA.keys()))
-        instructor = st.text_input("Instructor a Cargo", placeholder="Ej: Mones, Frascone...")
+        fecha = st.date_input("Fecha del Vuelo", datetime.date.today(), disabled=not es_admin)
+        avion_sel = st.selectbox("Selección de Aeronave", list(FLOTA_CUA.keys()), disabled=not es_admin)
+        instructor = st.text_input("Instructor a Cargo", placeholder="Ej: Mones, Frascone...", disabled=not es_admin)
 
     with col2:
-        tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"])
-        aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1)
-        meteorologia = st.text_input("Meteorología / Conditions", placeholder="Ej: VFR, CAVOK, Viento 120/05KT")
+        tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"], disabled=not es_admin)
+        aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1, disabled=not es_admin)
+        meteorologia = st.text_input("Meteorología / Conditions", placeholder="Ej: VFR, CAVOK, Viento 120/05KT", disabled=not es_admin)
 
     with col3:
-        leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...")
-        costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0)
-        tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0)
+        leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...", disabled=not es_admin)
+        costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0, disabled=not es_admin)
+        tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0, disabled=not es_admin)
         
         costo_usd = costo_ars / tc if tc > 0 else 0.0
         st.markdown(f"<p style='color: #00FF66; margin-top: 15px;'>Costo estimado: <b>USD {costo_usd:.2f}</b></p>", unsafe_allow_html=True)
 
     st.markdown("##### 💭 BITÁCORA EMOCIONAL Y ANECDOTARIO")
-    puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7)
-    anecdota = st.text_area("Sensaciones al mando o hitos del día...")
+    puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7, disabled=not es_admin)
+    anecdota = st.text_area("Sensaciones al mando o hitos del día...", disabled=not es_admin)
 
-    btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)")
+    btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)", disabled=not es_admin)
 
-    if btn_guardar:
+    if btn_guardar and es_admin:
         try:
             t_salida = datetime.datetime.strptime(str_salida.strip(), "%H:%M").time()
             t_llegada = datetime.datetime.strptime(str_llegada.strip(), "%H:%M").time()
@@ -273,8 +293,6 @@ with st.form("vuelo_oficial_form", clear_on_submit=True):
 
 st.markdown("---")
 
-import random
-
 # --- SECCIÓN: GENERADOR DE EXCUSAS ---
 if puntaje <= 5:
     excusas_piloto = [
@@ -283,16 +301,15 @@ if puntaje <= 5:
         "El tacómetro del Cessna estaba descalibrado y alteró mi percepción de la velocidad.",
         "Culpa del efecto suelo (Ground Effect) que no me dejó plancharlo.",
         "El neumático del tren principal derecho tenía 2 PSI de menos.",
-        "Estaba PRACTICANDO un aterrizaje de campo corto simulado con actitud agresiva.",
+        "Estaba practicando un aterrizaje de campo corto simulado con actitud agresiva.",
         "El instructor me tocó los comandos en el último segundo, lo juro."
     ]
     excusa_del_dia = random.choice(excusas_piloto)
     st.markdown(f"⚠️ *Nota del Comandante para el anecdotario:* `{excusa_del_dia}`")
 
-# --- SECCIÓN: HITOS DEL CURSO CON PERSISTENCIA SEGURA ANTIFALLAS ---
+# --- SECCIÓN: HITOS DEL CURSO CON PERSISTENCIA SEGURA ---
 st.markdown("### 🏅 MIS GRANDES HITOS AERONÁUTICOS")
 
-# 🛡️ VALIDACIÓN DE ARQUITECTURA: Extraer datos de forma segura solo si las columnas reales existen
 f_vuelo = str(df_hitos.at[0, "hito_primer_vuelo"]).strip() if (not df_hitos.empty and "hito_primer_vuelo" in df_hitos.columns) else ""
 f_ochos = str(df_hitos.at[0, "hito_ochos"]).strip() if (not df_hitos.empty and "hito_ochos" in df_hitos.columns) else ""
 f_solo = str(df_hitos.at[0, "hito_vuelo_solo"]).strip() if (not df_hitos.empty and "hito_vuelo_solo" in df_hitos.columns) else ""
@@ -300,7 +317,6 @@ f_nav = str(df_hitos.at[0, "hito_navegacion"]).strip() if (not df_hitos.empty an
 f_noc = str(df_hitos.at[0, "hito_nocturno"]).strip() if (not df_hitos.empty and "hito_nocturno" in df_hitos.columns) else ""
 f_ex = str(df_hitos.at[0, "hito_examen"]).strip() if (not df_hitos.empty and "hito_examen" in df_hitos.columns) else ""
 
-# Evaluar si están marcados basándose en si contienen strings de texto de fecha válidos
 h_vuelo = f_vuelo != "" and f_vuelo != "nan"
 h_ochos = f_ochos != "" and f_ochos != "nan"
 h_solo = f_solo != "" and f_solo != "nan"
@@ -308,7 +324,6 @@ h_nav = f_nav != "" and f_nav != "nan"
 h_noc = f_noc != "" and f_noc != "nan"
 h_ex = f_ex != "" and f_ex != "nan"
 
-# Crear etiquetas dinámicas que incluyan la fecha del logro si ya está tildado
 lbl_vuelo = f"🚀 Primer Despegue ({f_vuelo})" if h_vuelo else "🚀 Primer Despegue"
 lbl_ochos = f"🔄 Dominio de Ochos ({f_ochos})" if h_ochos else "🔄 Dominio de Ochos alrededor de un punto"
 lbl_solo = f"🦅 ¡PRIMER VUELO SOLO! ({f_solo})" if h_solo else "🦅 ¡PRIMER VUELO SOLO! (Corte de camisa)"
@@ -320,18 +335,18 @@ with st.container():
     col_hito1, col_hito2, col_hito3 = st.columns(3)
     
     with col_hito1:
-        v_vuelo = st.checkbox(lbl_vuelo, value=h_vuelo, key="chk_vuelo")
-        v_ochos = st.checkbox(lbl_ochos, value=h_ochos, key="chk_ochos")
+        v_vuelo = st.checkbox(lbl_vuelo, value=h_vuelo, key="chk_vuelo", disabled=not es_admin)
+        v_ochos = st.checkbox(lbl_ochos, value=h_ochos, key="chk_ochos", disabled=not es_admin)
     with col_hito2:
-        v_solo = st.checkbox(lbl_solo, value=h_solo, key="chk_solo")
-        v_nav = st.checkbox(lbl_nav, value=h_nav, key="chk_nav")
+        v_solo = st.checkbox(lbl_solo, value=h_solo, key="chk_solo", disabled=not es_admin)
+        v_nav = st.checkbox(lbl_nav, value=h_nav, key="chk_nav", disabled=not es_admin)
     with col_hito3:
-        v_noc = st.checkbox(lbl_noc, value=h_noc, key="chk_noc")
-        v_ex = st.checkbox(lbl_ex, value=h_ex, key="chk_ex")
+        v_noc = st.checkbox(lbl_noc, value=h_noc, key="chk_noc", disabled=not es_admin)
+        v_ex = st.checkbox(lbl_ex, value=h_ex, key="chk_ex", disabled=not es_admin)
 
-    # Si el estado de la UI cambió respecto a lo guardado en Sheets, actualizamos inmediatamente
-    if (v_vuelo != h_vuelo or v_ochos != h_ochos or v_solo != h_solo or 
-        v_nav != h_nav or v_noc != h_noc or v_ex != h_ex):
+    # Solo impacta cambios si es admin y hubo cambios reales en la interfaz
+    if es_admin and (v_vuelo != h_vuelo or v_ochos != h_ochos or v_solo != h_solo or 
+                     v_nav != h_nav or v_noc != h_noc or v_ex != h_ex):
         
         hoy_str = datetime.date.today().strftime("%Y-%m-%d")
         
@@ -349,7 +364,7 @@ with st.container():
             st.toast("🏅 ¡Tablero de hitos histórico actualizado!", icon="💾")
             st.rerun()
         except Exception as e:
-            st.warning("Hito cambiado localmente. Recordá crear la pestaña 'Hitos' en tu Google Sheet para persistir las fechas.")
+            st.warning("Hito cambiado localmente.")
 
 st.markdown("---")
 
