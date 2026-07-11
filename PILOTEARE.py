@@ -125,7 +125,7 @@ st.markdown("""
 
 # 4. 🗺️ TITULAR DE LA APP
 st.markdown('<h1 style="text-align: center; margin-bottom: 20px;">🛩 ... Bitacora de vuelo de Ale ...</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; color: #9CA3AF; margin-top: -15px;">SISTEMA DE GESTIÓN DE HORAS Y BITÁCORA EMOCIONAL - CUA</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #9CA3AF; margin-top: -15px;">SISTEMA DE GESTIÓN DE HORAS Y BITÁCORA EMOCIONAL - DE ALEJANDRO</p>', unsafe_allow_html=True)
 st.markdown("---")
 
 # 5. 🔗 CONEXIÓN CON GOOGLE SHEETS
