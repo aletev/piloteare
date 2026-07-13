@@ -160,6 +160,14 @@ tab_sistema, tab_manual = st.tabs(["📊 CUADRO DE MANDOS & BITÁCORA", "📖 MA
 with tab_sistema:
     st.markdown("### 📊 PANEL DE INSTRUMENTOS (TOTALES CURSO)")
 
+    # 🛡️ FIJACIÓN DE CONTINGENCIA: Inicializamos las variables de los instrumentos por defecto en cero
+    tot_dc = 0.0
+    tot_vs = 0.0
+    tot_horas = 0.0
+    tot_aterrizajes = 0
+    tot_inversion_usd = 0.0
+
+    # Si hay datos reales guardados, calculamos los totales sobre la marcha
     if not df_existente.empty and "Horas_Totales" in df_existente.columns:
         df_existente["Horas_DC"] = pd.to_numeric(df_existente["Horas_DC"]).fillna(0.0)
         df_existente["Horas_VS"] = pd.to_numeric(df_existente["Horas_VS"]).fillna(0.0)
@@ -173,4 +181,49 @@ with tab_sistema:
         tot_aterrizajes = int(df_existente["Aterrizajes"].sum())
         tot_inversion_usd = df_existente["Costo_USD"].sum()
 
-        m1, m2,
+    # Ahora el dibujo de las columnas corre seguro, tengan o no tengan datos cargados
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("Horas Doble Comando", f"{tot_dc:.1f} HS")
+    m2.metric("Horas Vuelo Solo (VS)", f"{tot_vs:.1f} HS")
+    m3.metric("Total Tacómetro (Bloque)", f"{tot_horas:.1f} / 40.0 HS")
+    m4.metric("Ciclos Aterrizaje", f"{tot_aterrizajes}")
+    m5.metric("Inversión Total", f"USD {tot_inversion_usd:.1f}")
+
+    st.progress(min(tot_horas / 40.0, 1.0))
+
+    if df_existente.empty:
+        st.info("✈️ Esperando encendido de motores. No hay registros asentados en la caja negra.")
+
+    st.markdown("---")
+
+    st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
+
+    if not es_admin:
+        st.warning("🔒 El formulario de carga de horas está deshabilitado en Modo Demo/Invitado.")
+
+    col_h1, col_h2 = st.columns(2)
+    with col_h1:
+        str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00", disabled=not es_admin)
+    with col_h2:
+        try:
+            dt_s = datetime.datetime.strptime(str_salida, "%H:%M")
+            dt_ll_default = (dt_s + datetime.timedelta(hours=1)).strftime("%H:%M")
+        except:
+            dt_ll_default = "11:00"
+        str_llegada = st.text_input("Hora Corte de Motor (Formato HH:MM)", value=dt_ll_default, disabled=not es_admin)
+
+    with st.form("vuelo_oficial_form", clear_on_submit=True):
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            fecha = st.date_input("Fecha del Vuelo", datetime.date.today(), disabled=not es_admin)
+            avion_sel = st.selectbox("Selección de Aeronave", list(FLOTA_CUA.keys()), disabled=not es_admin)
+            instructor = st.text_input("Instructor a Cargo", value="Juan Arrascaeta", placeholder="Ej: Mones, Frascone...", disabled=not es_admin)
+
+        with col2:
+            tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"], disabled=not es_admin)
+            aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1, disabled=not es_admin)
+            meteorologia = st.text_input("Meteorología / Conditions", placeholder="Ej: VFR, CAVOK", disabled=not es_admin)
+
+        with col3:
+            leccion
