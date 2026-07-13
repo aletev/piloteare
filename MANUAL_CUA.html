@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CUA - Manual Digital de Instrucción PPA</title>
+    <style>
+        :root {
+            --bg-cockpit: #1E222A;
+            --bg-panel: #282C34;
+            --bg-input: #17191E;
+            --garmin-amber: #FFB703;
+            --garmin-green: #00FF66;
+            --text-light: #E2E8F0;
+            --border-panel: #3E4451;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-cockpit);
+            color: var(--text-light);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* BARRA LATERAL - SELECTOR DE FASES */
+        nav {
+            width: 300px;
+            background-color: #11141A;
+            border-right: 2px solid var(--border-panel);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-panel);
+            margin-bottom: 20px;
+        }
+
+        .logo-container h2 {
+            color: var(--garmin-green);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .logo-container p {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+            margin-top: 5px;
+        }
+
+        nav button {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-light);
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        nav button:hover {
+            background-color: var(--bg-panel);
+            color: var(--garmin-amber);
+            border-color: var(--garmin-amber);
+        }
+
+        nav button.active {
+            background-color: var(--garmin-amber);
+            color: #1E222A;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.3);
+        }
+
+        /* ÁREA PRINCIPAL */
+        main {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Silueta de Fondo */
+        .bg-silhouette {
+            position: fixed;
+            bottom: 5%;
+            right: 5%;
+            width: 350px;
+            height: 350px;
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        .section-panel {
+            display: none;
+            background-color: var(--bg-panel);
+            border: 2px solid var(--border-panel);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section-panel.active {
+            display: block;
+        }
+
+        h1 {
+            color: var(--garmin-green);
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-panel);
+            padding-bottom: 10px;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.2);
+        }
+
+        h3 {
+            color: var(--garmin-amber);
+            text-transform: uppercase;
+            margin: 20px 0 10px 0;
+            font-size: 1.1rem;
+        }
+
+        p, lli {
+            line-height: 1.6;
+            font-size: 1rem;
+            color: #E2E8F0;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .highlight-box {
+            background-color: var(--bg-input);
+            border-left: 4px solid var(--garmin-amber);
+            padding: 15px;
+            border-radius: 0 5px 5px 0;
+            margin: 15px 0;
+        }
+
+        .emergency-box {
+            background-color: #3a1c20;
+            border-left: 4px solid #D90429;
+            padding: 15px;
+            border-radius: 0 5px 5px 0;
+            margin: 15px 0;
+        }
+
+        /* Estilo para los diagramas vectoriales simulados */
+        .diagram-container {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-panel);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .diagram-svg {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+        }
+
+        .radio-line {
+            background-color: var(--bg-input);
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px dashed var(--border-panel);
+            font-family: 'Courier New', monospace;
+            color: var(--garmin-green);
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            nav {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid var(--border-panel);
+            }
+            main {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MENÚ DE NAVEGACIÓN -->
+    <nav>
+        <div class="logo-container">
+            <h2>C.U.A.</h2>
+            <p>Centro Universitario de Aviación</p>
+            <p style="color: var(--garmin-amber); font-weight: bold; margin-top:5px;">MANUAL DE INSTRUCCIÓN PPA</p>
+        </div>
+        <button class="active" onclick="switchSection('briefing')">1. Briefing de Despegue</button>
+        <button onclick="switchSection('ascenso')">2. Ascenso y Nivelación</button>
+        <button onclick="switchSection('circuito')">3. Circuito de Tránsito</button>
+        <button onclick="switchSection('maniobras')">4. Salida e Ingreso</button>
+        <button onclick="switchSection('comunicaciones')">5. Guía de Comunicaciones</button>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main>
+        <!-- Gráfico del Cessna en planta de fondo -->
+        <svg class="bg-silhouette" viewBox="0 0 100 100">
+            <path fill="#00FF66" d="M47.5,15 L52.5,15 L52.5,16 L47.5,16 Z M41,16 L59,16 L59,16.5 L41,16.5 Z M46,16.5 L54,16.5 L55,27 L45,27 Z M2,31 L98,31 L98,42 L80,44 L53,42 L53,68 L63,71 L63,76 L51.5,76 L51.5,84 L48.5,84 L48.5,76 L37,76 L37,71 L47,68 L47,42 L20,44 L2,42 Z"/>
+        </svg>
+
+        <!-- SECCIÓN 1: BRIEFING DE DESPEGUE -->
+        <div id="briefing" class="section-panel active">
+            <h1>Briefing de Despegue</h1>
+            <p>Procedimiento operativo estándar para la ocupación, carrera de despegue y contingencias críticas en el umbral de pista.</p>
+            
+            <h3>Procedimiento Normal</h3>
+            <ul>
+                <li>Se ocupará y despegará de la pista <strong>17/35</strong>.</li>
+                <li>Una vez alineados con el eje de pista, se aplicará <strong>suave y progresivamente toda la potencia</strong>.</li>
+                <li>Se chequearán parámetros normales de motor en carrera: <strong>Presión, Temperatura y RPM</strong>. Si todo se encuentra en rango estándar, se continúa el despegue.</li>
+                <li><strong>Velocidad de rotación (Vr):</strong> 55 kt o 60 mph.</li>
+                <li><strong>Velocidad de ascenso (Vy):</strong> 60 kt o 70 mph.</li>
+            </ul>
+
+            <div class="emergency-box">
+                <h3>⚠️ Briefing de Emergencia (Fallas de Motor)</h3>
+                <p><strong>1. Falla antes de la rotación:</strong> Si algún parámetro no es correcto u ocurre alguna falla antes de levantar vuelo, se reducirá toda la potencia y se aplicarán frenos firmes utilizando la pista disponible restante.</p>
+                <p style="margin-top: 10px;"><strong>2. Falla posterior a la rotación (con pista remanente):</strong> Con velocidad de planeo de <strong>60 kt o 70 mph</strong> y manteniendo la nariz abajo para asegurar sustentación, se buscará aterrizar en la pista remanente. Los flaps se retraerán inmediatamente después de haber tocado el suelo.</p>
+                <p style="margin-top: 10px;"><strong>3. Falla sin pista remanente:</strong> La emergencia se resolverá estrictamente hacia adelante, buscando un campo a <strong>no más de 45 grados</strong> de cada lado, teniendo en cuenta la dirección del viento y el terreno previamente briefeado.</p>
+            </div>
+
+            <div class="highlight-box">
+                <h3>👨‍✈️ Jerarquía de Cabina en Emergencias</h3>
+                <ul>
+                    <li>Si ocurre alguna emergencia: <strong>El avión es de quien pilota (PF), y el copiloto asiste (PM)</strong>.</li>
+                    <li>Volando con instructor: Una emergencia <strong>real</strong> es siempre comandada por el instructor. Una emergencia <strong>simulada</strong> es operada por el alumno/piloto.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: ASCENSO Y NIVELACIÓN -->
+        <div id="ascenso" class="section-panel">
+            <h1>Performance de Ascenso y Nivelación</h1>
+            <p>Administración de actitudes, potencias y compensación para la transición fluida entre fases de vuelo.</p>
+
+            <h3>Fase de Ascenso inicial (al pasar 300 ft)</h3>
+            <div class="highlight-box">
+                <p>Al cruzar los <strong>300 pies de altitud</strong> se ejecutarán las siguientes acciones simultáneas:</p>
+                <ul style="margin-top: 10px; margin-bottom: 0;">
+                    <li><strong>Retracción de Flaps</strong> (si se utilizaron para despegue de campo corto).</li>
+                    <li><strong>Reducción de motor a 2500 RPM</strong> para proteger el grupo motopropulsor.</li>
+                </ul>
+            </div>
+            <p>Mantener una performance constante de ascenso con velocidad de <strong>70 mph (60 kts)</strong> y régimen de potencia en <strong>2500 RPM</strong>.</p>
+
+            <h3>Nivelación del Avión (Crucero)</h3>
+            <p>Al alcanzar la altitud asignada, se ejecutará estrictamente la secuencia nemotécnica en tres pasos para estabilizar el Cessna 150:</p>
+            <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                <li><strong>Actitud de crucero:</strong> Bajar la nariz buscando la referencia del horizonte visual.</li>
+                <li><strong>Potencia de crucero:</strong> Ajustar el acelerador firmemente a <strong>2300 RPM</strong>.</li>
+                <li><strong>Compenso el avión (Trim):</strong> Ajustar la rueda de compensación del timón de profundidad hasta liberar presiones en el comando.</li>
+            </ol>
+        </div>
+
+        <!-- SECCIÓN 3: CIRCUITO DE TRÁNSITO -->
+        <div id="circuito" class="section-panel">
+            <h1>Circuito de Tránsito de Aeródromo</h1>
+            <p>Patrón rectangular reglamentario en el Centro Universitario de Aviación para entrenamiento de despegues y aterrizajes.</p>
+
+            <div class="highlight-box">
+                <h3>📐 Parámetros del Circuito del CUA</h3>
+                <ul>
+                    <li><strong>Altitud del circuito:</strong> Estrictamente a <strong>500 pies (500 ft)</strong> de altitud.</li>
+                    <li><strong>Separación lateral:</strong> Mantener una distancia lateral constante de <strong>500 metros</strong> respecto a la pista de aterrizaje.</li>
+                </ul>
+            </div>
+
+            <h3>Diagrama de Flujo del Tránsito (Pista 17 / 35)</h3>
+            <div class="diagram-container">
+                <!-- Diagrama vectorial interactivo del circuito de tránsito -->
+                <svg class="diagram-svg" viewBox="0 0 600 220">
+                    <!-- Pista de aterrizaje -->
+                    <rect x="200" y="90" width="200" height="30" fill="#555" stroke="#fff" stroke-width="2"/>
+                    <text x="210" y="110" fill="#fff" font-family="monospace" font-size="12">17</text>
+                    <text x="375" y="110" fill="#fff" font-family="monospace" font-size="12">35</text>
+                    
+                    <!-- Circuito rectangular -->
+                    <rect x="80" y="20" width="440" height="170" fill="none" stroke="var(--garmin-amber)" stroke-width="2" stroke-dasharray="4"/>
+                    
+                    <!-- Flechas de dirección de tránsito -->
+                    <!-- Tramo Inicial / Inicial de la 17 -->
+                    <path d="M 270 20 L 260 15 M 270 20 L 260 25" stroke="var(--garmin-amber)" stroke-width="2"/>
+                    <text x="230" y="38" fill="var(--garmin-green)" font-size="11" font-weight="bold">INICIAL 35</text>
+                    
+                    <!-- Inicial de la 35 -->
+                    <path d="M 330 20 L 340 15 M 330 20 L 340 25" stroke="var(--garmin-amber)" stroke-width="2"/>
+                    <text x="330" y="38" fill="var(--garmin-green)" font-size="11" font-weight="bold">INICIAL 17</text>
+
+                    <!-- Pierna Básica Izquierda -->
+                    <text x="25" y="100" fill="var(--garmin-amber)" font-size="11" font-weight="bold">BÁSICA</text>
+                    <path d="M 80 110 L 75 100 M 80 110 L 85 100" stroke="var(--garmin-amber)" stroke-width="2"/>
+                    
+                    <!-- Pierna Básica Derecha -->
+                    <text x="530" y="100" fill="var(--garmin-amber)" font-size="11" font-weight="bold">BÁSICA</text>
+                    <path d="M 520 110 L 515 120 M 520 110 L 525 120" stroke="var(--garmin-amber)" stroke-width="2"/>
+
+                    <!-- Finales -->
+                    <text x="130" y="205" fill="var(--garmin-green)" font-size="11" font-weight="bold">FINAL</text>
+                    <path d="M 160 190 L 170 185 M 160 190 L 170 195" stroke="var(--garmin-amber)" stroke-width="2"/>
+                    
+                    <text x="430" y="205" fill="var(--garmin-green)" font-size="11" font-weight="bold">FINAL</text>
+                    <path d="M 440 190 L 430 185 M 440 190 L 430 195" stroke="var(--garmin-amber)" stroke-width="2"/>
+                </svg>
+            </div>
+            <p style="text-align: center; font-size: 0.85rem; color: #9CA3AF;">*Nota: Las trayectorias se adaptan simétricamente de acuerdo al viento en superficie y la pista en uso (17 o 35).</p>
+        </div>
+
+        <!-- SECCIÓN 4: MANIOBRAS DE SALIDA E INGRESO -->
+        <div id="maniobras" class="section-panel">
+            <h1>Maniobras de Salida e Ingreso al Circuito</h1>
+            <p>Evoluciones reglamentarias para abandonar de forma segura el área de tránsito hacia la zona de trabajo e incorporarse al circuito.</p>
+
+            <h3>Salida del Circuito</h3>
+            <p>Para abandonar el tránsito local con destino a las zonas de maniobras asignadas, se ejecutarán virajes normalizados según el patrón operativo:</p>
+            <ul>
+                <li>Efectuar un primer viraje instrumental de <strong>90 grados</strong> alejándose del eje de pista activo.</li>
+                <li>Establecer una trayectoria de escape realizando un segundo viraje de <strong>45 grados</strong> para franquear los límites del circuito de tráfico general.</li>
+            </ul>
+
+            <h3>Ingreso al Circuito (Procedimiento en "Gota de Agua")</h3>
+            <p>La reincorporación se realiza sobrevolando las referencias geográficas de la zona a altitudes seguras:</p>
+            <ul>
+                <li>Aproximarse cruzando la vertical de la zona de las vías a una altitud mandatoria de <strong>1000 pies (1000 ft)</strong>.</li>
+                <li>Iniciar una maniobra de <strong>descenso controlado</strong> cruzando las líneas indicadoras hasta alcanzar los <strong>500 pies reglamentarios</strong>.</li>
+                <li>Efectuar la maniobra de incorporación en forma de gota para acoplarse directamente a la pierna <strong>inicial de la pista 17/35</strong> con la velocidad estabilizada.</li>
+            </ul>
+        </div>
+
+        <!-- SECCIÓN 5: GUÍA DE COMUNICACIONES -->
+        <div id="comunicaciones" class="section-panel">
+            <h1>Guía de Comunicaciones VHF</h1>
+            <p>Estructura de fraseología aeronáutica reglamentaria para las transmisiones de radio en el Centro Universitario de Aviación y aeródromos aledaños.</p>
+
+            <h3>Base General de la Comunicación Aeronáutica</h3>
+            <div class="highlight-box">
+                <p>Cada transmisión de radio obligatoriamente debe respetar los siguientes tres pilares en orden:</p>
+                <ol style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>LUGAR:</strong> Identificar a qué estación o aeródromo le hablás (Ej: <em>Matanza</em>).</li>
+                    <li><strong>MATRÍCULA:</strong> Identificación oficial de la aeronave de la flota (Ej: <em>LV-CQU</em>).</li>
+                    <li><strong>INTENCIONES:</strong> Qué estás haciendo o qué planeás hacer de forma concisa.</li>
+                </ol>
+            </div>
+
+            <h3>Ejemplos de Fraseología en Ruta</h3>
+            <h3>Cruza de Vertical Estándar:</h3>
+            <div class="radio-line">"Matanza - LV-CQU - cruza su vertical por el oeste con 1000 pies."</div>
+
+            <h3>Notificación llegando a Destino Alternativo (Ej: Chascomús):</h3>
+            <div class="radio-line">"Chascomús - LV-CQU - proveniente del norte a 5 millas del suyo, con intención de incorporarse a inicial de pista 04/22."</div>
+
+            <h3 style="margin-top: 30px; border-top: 1px solid var(--border-panel); padding-top: 15px;">Mensajes de Radio en Fases de Tránsito Local (Matanza)</h3>
+            
+            <h3>Fase de Rodaje:</h3>
+            <p style="font-size: 0.9rem; color: #9CA3AF; margin-bottom: 5px;">Desde línea de pista / hangares hacia el punto de espera correspondiente:</p>
+            <div class="radio-line">"Matanza - *Matrícula* - rueda de línea de pista / hangares a punto de espera de pista 17/35."</div>
+
+            <h3>Ingreso a Pista Activa y Despegue:</h3>
+            <div class="radio-line">"Matanza - *Matrícula* - ocupa y despega pista 17/35."</div>
+
+            <h3>Ingreso a Pista y Mantener (Línea de espera activa):</h3>
+            <p style="font-size: 0.9rem; color: #9CA3AF; margin-bottom: 5px;">Utilizado por tránsito recién despegado, obstáculos en pista o demoras operacionales:</p>
+            <div class="radio-line">"Matanza - *Matrícula* - ocupa y mantiene pista 17/35."</div>
+
+            <h3>Secuencia Operativa de Regreso y Aterrizaje:</h3>
+            <p style="font-size: 0.9rem; color: #9CA3AF; margin-bottom: 5px;">Evolución de radio reportando cada tramo pos-zona de trabajo:</p>
+            <ol style="margin-left: 20px; margin-bottom: 25px; line-height: 1.8;">
+                <li><span style="color:var(--garmin-amber)">Vertical general:</span> "Matanza - *Matrícula* - de zona de trabajo a su vertical con 1000 pies."</li>
+                <li><span style="color:var(--garmin-amber)">Notificación geográfica:</span> "Matanza - *Matrícula* - próximo a su vertical por el oeste con 1000 pies."</li>
+                <li><span style="color:var(--garmin-amber)">Alejamiento y chequeo de veleta:</span> "Matanza - *Matrícula* - en su vertical con 1000 pies para alejamiento y posterior incorporación a circuito de pista 17/35."</li>
+                <li><span style="color:var(--garmin-amber)">En las vías en descenso:</span> "Matanza - *Matrícula* - en descenso para incorporarse a inicial de 17/35."</li>
+                <li><span style="color:var(--garmin-amber)">Tramo Inicial:</span> "Matanza - *Matrícula* - se incorpora a inicial de 17/35."</li>
+                <li><span style="color:var(--garmin-amber)">Tramo Básica:</span> "Matanza - *Matrícula* - básica de 17/35."</li>
+                <li><span style="color:var(--garmin-amber)">Tramo Final (Aterrizaje):</span> "Matanza - *Matrícula* - final de 17/35."</li>
+                <li><span style="color:var(--garmin-amber)">Pista libre:</span> "Matanza - *Matrícula* - libera pista 17/35."</li>
+            </ol>
+
+            <div class="highlight-box" style="border-left-color: var(--garmin-green);">
+                <p style="font-size: 0.9rem; font-style: italic;"><strong>💡 Aclaración del Instructor:</strong> Las palabras de los mensajes pueden ser ligeramente cambiadas adaptándose a la fluidez del momento; lo fundamental es respetar estrictamente la base de la comunicación (Lugar, Matrícula e Intenciones).</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- LÓGICA DE INTERACTIVIDAD -->
+    <script>
+        function switchSection(sectionId) {
+            // Remover estado activo de todos los paneles y botones
+            document.querySelectorAll('.section-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('nav button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Activar el panel seleccionado
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Buscar el botón correspondiente y activarlo
+            const event = window.event;
+            if(event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
