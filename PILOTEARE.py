@@ -148,9 +148,9 @@ FLOTA_CUA = {
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
     "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
     "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
-    "LV-CHE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-CHE"},
+    "LV-CHE (Cessna 152)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
     "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
-    "LV-IKE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-IKE"},
+    "LV-IKE (Cessna 152)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
     "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
     "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"}
 }
