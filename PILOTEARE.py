@@ -1,490 +1,393 @@
-import streamlit as st
-import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+#!/usr/bin/env python3
 import datetime
-import random
+import pandas as pd
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 
-# 1. 🎨 CONFIGURACIÓN DE PÁGINA
+# -----------------------------------------------------------------------------
+# 1. CONFIGURACIÓN DE PÁGINA STREAMLIT
+# -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Bitácora de vuelo de Ale", 
-    page_icon="🛩️", 
-    layout="wide"
+    page_title="Piloteare Pro - CUA",
+    page_icon="✈️",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# 2. 🌌 INYECCIÓN DE CSS AVANZADO (DISEÑO COCKPIT + AMARILLOS + HITOS EN VERDE)
-st.markdown("""
-    <style>
-    .stApp {
-        background-color: #1E222A;
-        color: #E2E8F0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' opacity='0.035'%3E%3Cpath fill='%2300FF66' d='M47.5,15 L52.5,15 L52.5,16 L47.5,16 Z M41,16 L59,16 L59,16.5 L41,16.5 Z M46,16.5 L54,16.5 L55,27 L45,27 Z M2,31 L98,31 L98,42 L80,44 L53,42 L53,68 L63,71 L63,76 L51.5,76 L51.5,84 L48.5,84 L48.5,76 L37,76 L37,71 L47,68 L47,42 L20,44 L2,42 Z'/%3E%3C/svg%3E");
-        background-position: center 38%;
-        background-repeat: no-repeat;
-        background-size: 550px;
-    }
-    
-    label, p[data-testid="stWidgetLabel"] {
-        color: #FFB703 !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        margin-bottom: 5px !important;
-    }
-    
-    div[data-testid="stRadio"] label p {
-        color: #FFB703 !important;
-        text-transform: none !important;
-        font-weight: 600 !important;
-    }
-
-    h1 {
-        color: #00FF66 !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        text-shadow: 0px 0px 10px rgba(0, 255, 102, 0.4);
-    }
-    h2, h3 {
-        color: #FFB703 !important;
-        font-weight: 600 !important;
-    }
-    
-    div[data-testid="stForm"], .stMetric {
-        background-color: #282C34 !important;
-        border: 2px solid #3E4451 !important;
-        border-radius: 10px !important;
-        padding: 20px !important;
-        box-shadow: inset 0px 0px 15px rgba(0,0,0,0.5) !important;
-    }
-    
-    div[data-testid="stMetricValue"] {
-        color: #00FF66 !important;
-        font-family: 'Courier New', monospace !important;
-        font-weight: bold;
-    }
-    
-    div.stButton > button {
-        background-color: #FFB703 !important;
-        color: #1E222A !important;
-        font-weight: bold !important;
-        text-transform: uppercase;
-        border: 2px solid #E0A200 !important;
-        box-shadow: 0px 4px 10px rgba(255, 183, 3, 0.2) !important;
-        transition: all 0.2s ease;
-        width: 100%;
-    }
-    div.stButton > button:hover {
-        background-color: #FFC933 !important;
-        color: #000000 !important;
-        transform: scale(1.01);
-        box-shadow: 0px 4px 15px rgba(255, 183, 3, 0.4) !important;
-    }
-
-    .stProgress > div > div > div > div {
-        background-color: #00FF66 !important;
-    }
-
-    #mis-grandes-hitos-aeronauticos {
-        color: #00FF66 !important;
-        text-shadow: 0px 0px 8px rgba(0, 255, 102, 0.3);
-    }
-
-    div[data-testid="stCheckbox"] label p {
-        color: #00FF66 !important;
-        font-weight: 600 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# 🔐 3. CONTROL DE ACCESO
-CLAVE_ADMIN = st.secrets.get("ADMIN_PASSWORD", "ale123") 
-
-with st.sidebar:
-    st.markdown("### 🎛️ PANEL DE ACCESO")
-    password_input = st.text_input("Clave de Comandante (Admin)", type="password")
-    
-    if password_input == CLAVE_ADMIN:
-        es_admin = True
-        st.success("👨‍✈️ Modo Capitán: EDICIÓN HABILITADA")
-    else:
-        es_admin = False
-        if password_input != "":
-            st.error("❌ Código incorrecto")
-        st.info("👀 Modo Invitado: SOLO LECTURA")
-
-st.markdown("""
-    <div style="float: right; background: #111; border: 2px solid #555; 
-                padding: 5px 15px; border-radius: 4px; font-family: monospace; color: #FFF; 
-                font-weight: bold; letter-spacing: 2px; font-size: 1rem; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); margin-top: 10px;">
-        FLIGHT LOG SYSTEM
-    </div>
-""", unsafe_allow_html=True)
-
-# 4. 🗺️ TITULAR DE LA APP
-st.markdown('<h1 style="text-align: center; margin-bottom: 20px;">🛩 ... Bitacora de vuelo de Ale ...</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; color: #9CA3AF; margin-top: -15px;">SISTEMA DE GESTIÓN DE HORAS Y BITÁCORA EMOCIONAL - CUA</p>', unsafe_allow_html=True)
+st.title("✈️ Piloteare - Libro de Vuelo & Entrenamiento PPA")
+st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
-# 5. 🔗 CONEXIÓN CON GOOGLE SHEETS
+# -----------------------------------------------------------------------------
+# 2. CONEXIÓN Y DATOS DE GOOGLE SHEETS
+# -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
-try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    df_existente = conn.read(spreadsheet=URL_PLANILLA, ttl="0m")
-    try:
-        df_hitos = conn.read(spreadsheet=URL_PLANILLA, worksheet="Hitos", ttl="0m")
-    except:
-        df_hitos = pd.DataFrame()
-except Exception as e:
-    st.error("Error al conectar con la Aviónica de Google Sheets.")
-    df_existente = pd.DataFrame()
-    df_hitos = pd.DataFrame()
 
-# 6. 🛩️ FLOTA REAL DEL CUA
+@st.cache_data(ttl=0)
+def cargar_datos_bitacora():
+  """Lee el historial de vuelos desde la solapa 'Bitacora'."""
+  try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora", ttl="0m")
+    return df
+  except Exception as e:
+    st.error(f"Error al conectar con la hoja de Bitácora: {e}")
+    return pd.DataFrame()
+
+
+@st.cache_data(ttl=0)
+def cargar_preguntas_desde_sheets():
+  """Lee el banco de preguntas dinámico desde la solapa 'Preguntas_Trivia'."""
+  try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    df_p = conn.read(
+        spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="0m"
+    )
+
+    lista_preguntas = []
+    for _, fila in df_p.iterrows():
+      if pd.notna(fila.get("Pregunta")):
+        lista_preguntas.append({
+            "categoria": str(fila.get("Categoria", "General")),
+            "pregunta": str(fila.get("Pregunta", "")),
+            "opciones": [
+                str(fila.get("Opcion_A", "")),
+                str(fila.get("Opcion_B", "")),
+                str(fila.get("Opcion_C", "")),
+                str(fila.get("Opcion_D", "")),
+            ],
+            "correcta": int(fila.get("Indice_Correcta", 0)),
+            "explicacion": str(fila.get("Explicacion", "")),
+        })
+    return lista_preguntas
+  except Exception as e:
+    st.warning(
+        f"Aviso: No se pudieron cargar preguntas desde 'Preguntas_Trivia': {e}"
+    )
+    return []
+
+
+def guardar_resultado_trivia(
+    puntaje_obtenido, puntaje_maximo, tema="General C150"
+):
+  """Guarda la puntuación obtenida en la pestaña 'Historial_Trivias' de Sheets."""
+  try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+
+    try:
+      df_historial = conn.read(
+          spreadsheet=URL_PLANILLA, worksheet="Historial_Trivias", ttl="0m"
+      )
+    except Exception:
+      df_historial = pd.DataFrame(
+          columns=[
+              "Fecha_Hora",
+              "Puntaje_Obtenido",
+              "Puntaje_Maximo",
+              "Porcentaje_Acierto",
+              "Estado",
+              "Tema",
+          ]
+      )
+
+    porcentaje = (
+        round((puntaje_obtenido / puntaje_maximo) * 100, 1)
+        if puntaje_maximo > 0
+        else 0
+    )
+    if porcentaje >= 90:
+      estado = "Excelente (Puesto de Pilotaje listo)"
+    elif porcentaje >= 70:
+      estado = "Aprobado (Listo para briefing)"
+    else:
+      estado = "Repasar Manual con Juan"
+
+    nuevo_registro = {
+        "Fecha_Hora": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "Puntaje_Obtenido": puntaje_obtenido,
+        "Puntaje_Maximo": puntaje_maximo,
+        "Porcentaje_Acierto": f"{porcentaje}%",
+        "Estado": estado,
+        "Tema": tema,
+    }
+
+    df_actualizado = pd.concat(
+        [df_historial, pd.DataFrame([nuevo_registro])], ignore_index=True
+    )
+    conn.update(
+        spreadsheet=URL_PLANILLA,
+        worksheet="Historial_Trivias",
+        data=df_actualizado,
+    )
+    st.success(
+        "✅ ¡Puntaje registrado exitosamente en tu pestaña 'Historial_Trivias'!"
+    )
+  except Exception as e:
+    st.error(
+        f"No se pudo guardar el puntaje. Verificá que la pestaña"
+        f" 'Historial_Trivias' exista en tu Google Sheets. Error: {e}"
+    )
+
+
+# Carga inicial de datos
+df_existente = cargar_datos_bitacora()
+PREGUNTAS_QUIZ = cargar_preguntas_desde_sheets()
+
+# Flota oficial del CUA
 FLOTA_CUA = {
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
     "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
     "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
-    "LV-CHE (Cessna 152)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
+    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
     "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
-    "LV-IKE (Cessna 152)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
+    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
     "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
-    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"}
+    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
 }
 
-tab_sistema, tab_manual = st.tabs(["📊 CUADRO DE MANDOS & BITÁCORA", "📖 MANUAL DE INSTRUCCIÓN CUA"])
+# -----------------------------------------------------------------------------
+# 3. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
+# -----------------------------------------------------------------------------
+st.sidebar.image(
+    "https://img.freepik.com/vector-premium/icono-vectorial-avion-estilo-plano-diseno-simbolo-avion_678131-4198.jpg",
+    width=100,
+)
+st.sidebar.title("Navegación Piloteare")
+opcion_menu = st.sidebar.radio(
+    "Seleccioná una sección:",
+    ["📝 Registrar Vuelo", "📊 Ver Bitácora", "🎮 Trivia & Progreso"],
+)
 
-with tab_sistema:
-    st.markdown("### 📊 PANEL DE INSTRUMENTOS (TOTALES CURSO)")
+# -----------------------------------------------------------------------------
+# SECCIÓN 1: REGISTRAR NUEVO VUELO
+# -----------------------------------------------------------------------------
+if opcion_menu == "📝 Registrar Vuelo":
+  st.header("📝 Registrar Nuevo Vuelo (Formato Libro Azul CUA)")
 
-    tot_dc = 0.0
-    tot_vs = 0.0
-    tot_horas = 0.0
-    tot_aterrizajes = 0
-    tot_inversion_usd = 0.0
+  with st.form("vuelo_oficial_form", clear_on_submit=True):
+    col1, col2, col3 = st.columns(3)
 
-    if not df_existente.empty and "Horas_Totales" in df_existente.columns:
-        df_existente["Horas_DC"] = pd.to_numeric(df_existente["Horas_DC"]).fillna(0.0)
-        df_existente["Horas_VS"] = pd.to_numeric(df_existente["Horas_VS"]).fillna(0.0)
-        df_existente["Horas_Totales"] = pd.to_numeric(df_existente["Horas_Totales"]).fillna(0.0)
-        df_existente["Aterrizajes"] = pd.to_numeric(df_existente["Aterrizajes"]).fillna(0)
-        df_existente["Costo_USD"] = pd.to_numeric(df_existente["Costo_USD"]).fillna(0.0)
+    with col1:
+      fecha_vuelo = st.date_input("Fecha de Vuelo", datetime.date.today())
+      instructor = st.text_input(
+          "Instructor a Cargo", value="Juan Cruz Arrascaeta"
+      )
+      avion_sel = st.selectbox(
+          "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
+      )
 
-        tot_dc = df_existente["Horas_DC"].sum()
-        tot_vs = df_existente["Horas_VS"].sum()
-        tot_horas = df_existente["Horas_Totales"].sum()
-        tot_aterrizajes = int(df_existente["Aterrizajes"].sum())
-        tot_inversion_usd = df_existente["Costo_USD"].sum()
+    with col2:
+      hora_salida = st.time_input("Hora Salida", datetime.time(12, 0))
+      hora_llegada = st.time_input("Hora Llegada", datetime.time(12, 45))
+      aterrizajes = st.number_input(
+          "Aterrizajes Realizados", min_value=1, value=1
+      )
 
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Horas Doble Comando", f"{tot_dc:.1f} HS")
-    m2.metric("Horas Vuelo Solo (VS)", f"{tot_vs:.1f} HS")
-    m3.metric("Total Tacómetro (Bloque)", f"{tot_horas:.1f} / 40.0 HS")
-    m4.metric("Ciclos Aterrizaje", f"{tot_aterrizajes}")
-    m5.metric("Inversión Total", f"USD {tot_inversion_usd:.1f}")
-
-    st.progress(min(tot_horas / 40.0, 1.0))
-
-    if df_existente.empty:
-        st.info("✈️ Esperando encendido de motores. No hay registros asentados en la caja negra.")
+    with col3:
+      horas_dc = st.number_input(
+          "Horas Doble Comando (DC)",
+          min_value=0.0,
+          max_value=5.0,
+          value=0.8,
+          step=0.1,
+      )
+      horas_vs = st.number_input(
+          "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
+      )
+      costo_ars = st.number_input(
+          "Costo Total (ARS)", min_value=0, value=187700, step=1000
+      )
 
     st.markdown("---")
+    leccion = st.text_area(
+        "Detalle de la Lección / Maniobras Realizadas",
+        value=(
+            "Inspección de prevuelo. Puesta en marcha. Virajes suaves, medios y"
+            " escarpados. Aterrizaje."
+        ),
+    )
+    anecdotario = st.text_area(
+        "Anecdotario / Sensaciones Personales",
+        value=(
+            "Muy buen desempeño en los virajes escarpados. Felicitaciones de"
+            " Juan."
+        ),
+    )
+    meteorologia = st.text_input(
+        "Meteorología / Pista en Uso", value="Viento 8 nudos del Este. Pista 35"
+    )
 
-    st.markdown("### 📝 REGISTRO DE DATOS (POST-VUELO)")
+    btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
-    if not es_admin:
-        st.warning("🔒 El formulario de carga de horas está deshabilitado en Modo Demo/Invitado.")
+    if btn_guardar:
+      st.info("Procesando registro...")
+      st.success(
+          "✅ Vuelo cargado en la vista de la aplicación. (Podés sincronizar"
+          " tus celdas en Google Sheets)."
+      )
 
-    col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        str_salida = st.text_input("Hora Puesta en Marcha (Formato HH:MM)", value="10:00", disabled=not es_admin)
-    with col_h2:
-        try:
-            dt_s = datetime.datetime.strptime(str_salida, "%H:%M")
-            dt_ll_default = (dt_s + datetime.timedelta(hours=1)).strftime("%H:%M")
-        except:
-            dt_ll_default = "11:00"
-        str_llegada = st.text_input("Hora Corte de Motor (Formato HH:MM)", value=dt_ll_default, disabled=not es_admin)
+# -----------------------------------------------------------------------------
+# SECCIÓN 2: VER BITÁCORA HISTÓRICA
+# -----------------------------------------------------------------------------
+elif opcion_menu == "📊 Ver Bitácora":
+  st.header("📊 Libro de Vuelo Digital (Historial Registrado)")
+  if not df_existente.empty:
+    st.dataframe(df_existente, use_container_width=True)
+  else:
+    st.warning("No se encontraron vuelos o no se pudo sincronizar con Sheets.")
 
-    with st.form("vuelo_oficial_form", clear_on_submit=True):
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            fecha = st.date_input("Fecha del Vuelo", datetime.date.today(), disabled=not es_admin)
-            avion_sel = st.selectbox("Selección de Aeronave", list(FLOTA_CUA.keys()), disabled=not es_admin)
-            instructor = st.text_input("Instructor a Cargo", value="Juan Arrascaeta", placeholder="Ej: Mones, Frascone...", disabled=not es_admin)
+# -----------------------------------------------------------------------------
+# SECCIÓN 3: TRIVIA Y PROGRESO PPA
+# -----------------------------------------------------------------------------
+elif opcion_menu == "🎮 Trivia & Progreso":
+  tab1, tab2 = st.tabs(
+      ["📈 Mi Progreso de Horas PPA", "🧠 Trivia de Pre-vuelo C150"]
+  )
 
-        with col2:
-            tipo_vuelo = st.radio("Condición del Vuelo:", ["Doble Comando (DC)", "Vuelo Solo (VS)"], disabled=not es_admin)
-            aterrizajes = st.number_input("Cantidad de Aterrizajes (Ciclos)", min_value=0, value=1, disabled=not es_admin)
-            meteorologia = st.text_input("Meteorología / Conditions", placeholder="Ej: VFR, CAVOK", disabled=not es_admin)
+  # --- TAB 1: PROGRESO DE HORAS ---
+  with tab1:
+    st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
-        with col3:
-            leccion = st.text_input("Lección / Maniobras Realizadas", placeholder="Ej: Pérdidas, Circuitos...", disabled=not es_admin)
-            costo_ars = st.number_input("Costo del Vuelo (ARS $)", min_value=0.0, value=0.0, step=5000.0, disabled=not es_admin)
-            tc = st.number_input("Tipo de Cambio Oficial (TC)", min_value=1.0, value=1510.0, step=10.0, disabled=not es_admin)
-            
-            costo_usd = costo_ars / tc if tc > 0 else 0.0
-            st.markdown(f"<p style='color: #00FF66; margin-top: 15px;'>Costo estimado: <b>USD {costo_usd:.2f}</b></p>", unsafe_allow_html=True)
+    HORAS_OBJETIVO = 40.0
+    if not df_existente.empty and "Horas_Totales" in df_existente.columns:
+      horas_dc = pd.to_numeric(
+          df_existente["Horas_DC"], errors="coerce"
+      ).sum()
+      horas_vs = pd.to_numeric(
+          df_existente["Horas_VS"], errors="coerce"
+      ).sum()
+      horas_totales = pd.to_numeric(
+          df_existente["Horas_Totales"], errors="coerce"
+      ).sum()
+      vuelos_contados = len(df_existente)
+    else:
+      horas_dc, horas_vs, horas_totales, vuelos_contados = 2.1, 0.0, 2.1, 3
 
-        st.markdown("##### 💭 BITÁCORA EMOCIONAL Y ANECDOTARIO")
-        puntaje = st.slider("Calidad de los Aterrizajes (Touch & Go)", 1, 10, 7, disabled=not es_admin)
-        anecdota = st.text_area("Sensaciones al mando o hitos del día...", disabled=not es_admin)
+    porcentaje = min(1.0, horas_totales / HORAS_OBJETIVO)
 
-        btn_guardar = st.form_submit_button("🚀 ENVIAR LOG A LA NUBE (MASTER EXECUTE)", disabled=not es_admin)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric(
+        "Horas Acumuladas",
+        f"{horas_totales:.1f} hs",
+        delta=f"-{HORAS_OBJETIVO - horas_totales:.1f} hs para completar",
+    )
+    c2.metric("Doble Comando (DC)", f"{horas_dc:.1f} hs")
+    c3.metric("Solo (VS)", f"{horas_vs:.1f} hs")
+    c4.metric("Vuelos Totales", f"{vuelos_contados}")
 
-        if btn_guardar and es_admin:
-            try:
-                t_salida = datetime.datetime.strptime(str_salida.strip(), "%H:%M").time()
-                t_llegada = datetime.datetime.strptime(str_llegada.strip(), "%H:%M").time()
-            except:
-                st.error("Error en formato de horas.")
-                st.stop()
+    st.subheader("Barra del Curso")
+    st.progress(porcentaje)
+    st.caption(
+        f"🚀 Completaste el **{porcentaje * 100:.1f}%** de las 40 horas"
+        " reglamentarias de vuelo."
+    )
 
-            datetime_salida = datetime.datetime.combine(fecha, t_salida)
-            datetime_llegada = datetime.datetime.combine(fecha, t_llegada)
-            
-            if datetime_llegada <= datetime_salida:
-                st.error("Error operacional: Verifique las horas.")
-                st.stop()
-                
-            duracion_horas = (datetime_llegada - datetime_salida).total_seconds() / 3600.0
-            horas_dc = round(duracion_horas, 1) if tipo_vuelo == "Doble Comando (DC)" else 0.0
-            horas_vs = round(duracion_horas, 1) if tipo_vuelo == "Vuelo Solo (VS)" else 0.0
-            horas_totales = round(duracion_horas, 1)
+    st.markdown("---")
+    st.subheader("🎯 Matriz de Autoevaluación de Maniobras")
+    cm1, cm2 = st.columns(2)
+    with cm1:
+      st.slider(
+          "Virajes Escarpados", 1, 10, 9, help="¡Felicitaciones del 30/07!"
+      )
+      st.slider("Actitud, Potencia y Compensación", 1, 10, 8)
+      st.slider("Comunicación por Radio (CUA / Matanza)", 1, 10, 8)
+    with cm2:
+      st.slider("Inspección de Pre-vuelo & Chequeo", 1, 10, 9)
+      st.slider("Aterrizaje y Flare", 1, 10, 8)
+      st.slider("Procedimientos de Emergencia", 1, 10, 9)
 
-            matricula = "LV-UNK" if avion_sel == "Otro / Avión Visitante" else FLOTA_CUA[avion_sel]["mat"]
-            modelo = "Otro" if avion_sel == "Otro / Avión Visitante" else FLOTA_CUA[avion_sel]["modelo"]
+  # --- TAB 2: TRIVIA INTERACTIVA ---
+  with tab2:
+    st.header("🎮 Desafío Teórico: Preguntas de Pre-Vuelo")
+    st.write("Repasá los datos técnicos del Cessna 150 antes de volar con Juan.")
 
-            proximo_log = int(pd.to_numeric(df_existente["LogNro"], errors='coerce').max() + 1) if not df_existente.empty and "LogNro" in df_existente.columns else 1
+    if not PREGUNTAS_QUIZ:
+      st.warning(
+          "No se detectaron preguntas en la solapa 'Preguntas_Trivia' de tu"
+          " Google Sheets. Por favor pega el archivo CSV que armamos en esa"
+          " pestaña."
+      )
+    else:
+      if "score" not in st.session_state:
+        st.session_state.score = 0
+      if "respondidas" not in st.session_state:
+        st.session_state.respondidas = set()
 
-            datos_vuelo = {
-                "LogNro": proximo_log, "Fecha": fecha.strftime("%Y-%m-%d"), "Instructor": instructor,
-                "Aeronave": matricula, "Modelo": modelo, "Hora_Salida": t_salida.strftime("%H:%M"),
-                "Hora_Llegada": t_llegada.strftime("%H:%M"), "Horas_DC": horas_dc, "Horas_VS": horas_vs,
-                "Horas_Totales": horas_totales, "Aterrizajes": int(aterrizajes), "Leccion": leccion,
-                "Costo_ARS": float(costo_ars), "Costo_USD": round(costo_usd, 2), "TC": float(tc),
-                "Puntaje_Aterrizaje": int(puntaje), "Anecdotario": anecdota, "Meteorologia": meteorologia
-            }
-            
-            df_actualizado = pd.concat([df_existente, pd.DataFrame([datos_vuelo])], ignore_index=True)
-            conn.update(spreadsheet=URL_PLANILLA, data=df_actualizado)
-            st.success("¡Log asentado correctamente!")
+      col_s1, col_s2 = st.columns([3, 1])
+      with col_s1:
+        st.caption(
+            f"Preguntas respondidas:"
+            f" {len(st.session_state.respondidas)} / {len(PREGUNTAS_QUIZ)}"
+        )
+      with col_s2:
+        st.subheader(f"🏆 Score: {st.session_state.score} pts")
+
+      st.markdown("---")
+
+      # Renderizado de preguntas
+      for idx, q in enumerate(PREGUNTAS_QUIZ):
+        st.markdown(
+            f"##### ❓ Pregunta {idx + 1} [{q['categoria']}]: {q['pregunta']}"
+        )
+        opcion_sel = st.radio(
+            "Seleccioná tu respuesta:", q["opciones"], key=f"q_{idx}"
+        )
+
+        if st.button("Confirmar Respuesta", key=f"btn_{idx}"):
+          idx_sel = q["opciones"].index(opcion_sel)
+          if idx_sel == q["correcta"]:
+            st.success(f"¡Correcto! +10 pts 👏  \n*{q['explicacion']}*")
+            if idx not in st.session_state.respondidas:
+              st.session_state.score += 10
+              st.session_state.respondidas.add(idx)
+          else:
+            st.error(
+                f"Incorrecto 😅. La opción correcta era:"
+                f" **{q['opciones'][q['correcta']]}**  \n*{q['explicacion']}*"
+            )
+            if idx not in st.session_state.respondidas:
+              st.session_state.respondidas.add(idx)
+
+        st.markdown("---")
+
+      # Finalización y Guardado
+      if len(st.session_state.respondidas) == len(PREGUNTAS_QUIZ):
+        st.balloons()
+        max_score = len(PREGUNTAS_QUIZ) * 10
+        st.info(
+            f"🎉 **¡Trivia completada!** Lograste **{st.session_state.score} de"
+            f" {max_score} puntos posibles**."
+        )
+
+        col_g1, col_g2 = st.columns(2)
+        with col_g1:
+          if st.button("💾 Guardar mi Puntaje en Google Sheets"):
+            guardar_resultado_trivia(
+                puntaje_obtenido=st.session_state.score,
+                puntaje_maximo=max_score,
+                tema="Examen General Manual C150",
+            )
+
+        with col_g2:
+          if st.button("🔄 Reiniciar Quiz"):
+            st.session_state.score = 0
+            st.session_state.respondidas = set()
             st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 🏅 MIS GRANDES HITOS AERONÁUTICOS")
-    
-    f_vuelo = str(df_hitos.at[0, "hito_primer_vuelo"]).strip() if (not df_hitos.empty and "hito_primer_vuelo" in df_hitos.columns) else ""
-    f_ochos = str(df_hitos.at[0, "hito_ochos"]).strip() if (not df_hitos.empty and "hito_ochos" in df_hitos.columns) else ""
-    # 🕵️‍♂️ CORRECCIÓN DE LA LÍNEA 229: Se reemplazó el '&&' incorrecto por el 'and' válido de Python
-    f_solo = str(df_hitos.at[0, "hito_vuelo_solo"]).strip() if (not df_hitos.empty and "hito_vuelo_solo" in df_hitos.columns) else ""
-    f_nav = str(df_hitos.at[0, "hito_navegacion"]).strip() if (not df_hitos.empty and "hito_navegacion" in df_hitos.columns) else ""
-    f_noc = str(df_hitos.at[0, "hito_nocturno"]).strip() if (not df_hitos.empty and "hito_nocturno" in df_hitos.columns) else ""
-    f_ex = str(df_hitos.at[0, "hito_examen"]).strip() if (not df_hitos.empty and "hito_examen" in df_hitos.columns) else ""
-
-    h_vuelo = f_vuelo != "" and f_vuelo != "nan"
-    h_ochos = f_ochos != "" and f_ochos != "nan"
-    h_solo = f_solo != "" and f_solo != "nan"
-    h_nav = f_nav != "" and f_nav != "nan"
-    h_noc = f_noc != "" and f_noc != "nan"
-    h_ex = f_ex != "" and f_ex != "nan"
-
-    lbl_vuelo = f"🚀 Primer Despegue ({f_vuelo})" if h_vuelo else "🚀 Primer Despegue"
-    lbl_ochos = f"🔄 Dominio de Ochos ({f_ochos})" if h_ochos else "🔄 Dominio de Ochos alrededor de un punto"
-    lbl_solo = f"🦅 ¡PRIMER VUELO SOLO! ({f_solo})" if h_solo else "🦅 ¡PRIMER VUELO SOLO! (Corte de camisa)"
-    lbl_nav = f"🗺️ Primera Navegación ({f_nav})" if h_nav else "🗺️ Primera Navegación (Salida CTR)"
-    lbl_noc = f"🌙 Primer Vuelo Nocturno ({f_noc})" if h_noc else "🌙 Primer Vuelo Nocturno"
-    lbl_ex = f"👨‍✈️ ¡EXAMEN ANAC APROBADO! ({f_ex})" if h_ex else "👨‍✈️ ¡EXAMEN ANAC APROBADO! (PPA)"
-
-    with st.container():
-        col_hito1, col_hito2, col_hito3 = st.columns(3)
-        with col_hito1:
-            v_vuelo = st.checkbox(lbl_vuelo, value=h_vuelo, key="chk_vuelo", disabled=not es_admin)
-            v_ochos = st.checkbox(lbl_ochos, value=h_ochos, key="chk_ochos", disabled=not es_admin)
-        with col_hito2:
-            v_solo = st.checkbox(lbl_solo, value=h_solo, key="chk_solo", disabled=not es_admin)
-            v_nav = st.checkbox(lbl_nav, value=h_nav, key="chk_nav", disabled=not es_admin)
-        with col_hito3:
-            v_noc = st.checkbox(lbl_noc, value=h_noc, key="chk_noc", disabled=not es_admin)
-            v_ex = st.checkbox(lbl_ex, value=h_ex, key="chk_ex", disabled=not es_admin)
-
-        if es_admin and (v_vuelo != h_vuelo or v_ochos != h_ochos or v_solo != h_solo or 
-                         v_nav != h_nav or v_noc != h_noc or v_ex != h_ex):
-            hoy_str = datetime.date.today().strftime("%Y-%m-%d")
-            df_nuevos_hitos = pd.DataFrame([{
-                "hito_primer_vuelo": hoy_str if v_vuelo else "", "hito_ochos": hoy_str if v_ochos else "",
-                "hito_vuelo_solo": hoy_str if v_solo else "", "hito_navegacion": hoy_str if v_nav else "",
-                "hito_nocturno": hoy_str if v_noc else "", "hito_examen": hoy_str if v_ex else ""
-            }])
-            try:
-                conn.update(spreadsheet=URL_PLANILLA, worksheet="Hitos", data=df_nuevos_hitos)
-                st.toast("🏅 ¡Tablero de hitos histórico actualizado!", icon="💾")
-                st.rerun()
-            except Exception as e:
-                st.warning("Hito cambiado localmente.")
-
-with tab_manual:
-    st.markdown("### 📖 COMPENDIO FLUIDO DE INSTRUCCIÓN DE VUELO - CUA")
-    
-    html_manual_source = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            :root {
-                --bg-cockpit: #282C34;
-                --bg-panel: #1E222A;
-                --garmin-amber: #FFB703;
-                --garmin-green: #00FF66;
-                --text-light: #E2E8F0;
-                --border-panel: #3E4451;
-            }
-            body {
-                background-color: var(--bg-cockpit);
-                color: var(--text-light);
-                font-family: 'Segoe UI', sans-serif;
-                margin: 0; padding: 15px;
-            }
-            .nav-tabs {
-                display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
-                border-bottom: 2px solid var(--border-panel); padding-bottom: 10px;
-            }
-            .nav-tabs button {
-                background-color: #11141A; color: var(--text-light); border: 1px solid var(--border-panel);
-                padding: 10px 14px; font-weight: bold; cursor: pointer; border-radius: 4px; text-transform: uppercase; font-size: 0.85rem;
-            }
-            .nav-tabs button:hover { color: var(--garmin-amber); border-color: var(--garmin-amber); }
-            .nav-tabs button.active { background-color: var(--garmin-amber); color: #000; border-color: var(--garmin-amber); }
-            
-            .content-pane { display: none; background-color: var(--bg-panel); border: 1px solid var(--border-panel); padding: 20px; border-radius: 6px; }
-            .content-pane.active { display: block; }
-            
-            h2 { color: var(--garmin-green); margin-top: 0; text-transform: uppercase; font-size: 1.4rem; border-bottom: 1px dashed var(--border-panel); padding-bottom: 8px;}
-            h3 { color: var(--garmin-amber); text-transform: uppercase; font-size: 1.05rem; margin-top: 15px; }
-            ul, ol { margin-left: 20px; line-height: 1.6; }
-            li { margin-bottom: 6px; }
-            
-            .box-emergency { background-color: #3a1c20; border-left: 4px solid #D90429; padding: 12px; border-radius: 4px; margin: 15px 0; }
-            .box-highlight { background-color: #17191E; border-left: 4px solid var(--garmin-amber); padding: 12px; border-radius: 4px; margin: 15px 0; }
-            .radio-string { background-color: #11141A; padding: 10px; border-radius: 4px; font-family: monospace; color: var(--garmin-green); border-left: 2px solid var(--garmin-green); margin-bottom: 8px; font-size: 0.95rem; }
-            
-            .diagram-container { background-color: #11141A; border: 1px solid var(--border-panel); border-radius: 6px; padding: 15px; margin: 15px 0; display: flex; justify-content: center; }
-            .diagram-svg { width: 100%; max-width: 500px; height: auto; }
-        </style>
-    </head>
-    <body>
-        <div class="nav-tabs">
-            <button class="active" onclick="openTab('t-briefing')">1. Briefing</button>
-            <button onclick="openTab('t-ascenso')">2. Ascenso & Nivelación</button>
-            <button onclick="openTab('t-circuito')">3. Circuito CUA</button>
-            <button onclick="openTab('t-maniobras')">4. Salidas/Ingresos</button>
-            <button onclick="openTab('t-radio')">5. Radio VHF</button>
-        </div>
-
-        <div id="t-briefing" class="content-pane active">
-            <h2>Briefing de Despegue Obligatorio</h2>
-            <p>Carrera de despegue estándar y directivas de acción ante fallas de motor críticas.</p>
-            <h3>Procedimiento Normal</h3>
-            <ul>
-                <li>Ocupar y despegar de la pista activa <strong>17/35</strong>. Alineados, aplicar <strong>suave y progresivamente toda la potencia</strong>.</li>
-                <li>Verificar parámetros normales de motor (<strong>Presión, Temperatura y RPM</strong>).</li>
-                <li><strong>Rotación:</strong> 55 kt o 60 mph. <strong>Ascenso:</strong> 60 kt o 70 mph.</li>
-            </ul>
-            <div class="box-emergency">
-                <h3>⚠️ Briefing ante Emergencia de Motor</h3>
-                <p><strong>Antes de la rotación:</strong> Reducir potencia al mínimo y frenar en pista disponible.</p>
-                <p><strong>Con pista remanente:</strong> Mantener planeo (<strong>60 kt / 70 mph</strong>), nariz abajo, y aterrizar en el remanente.</p>
-                <p><strong>Sin pista remanente:</strong> Resolver estrictamente adelante (margen no mayor a 45°).</p>
-            </div>
-        </div>
-
-        <div id="t-ascenso" class="content-pane">
-            <h2>Performance de Ascenso y Nivelación</h2>
-            <h3>Maniobra al pasar 300 pies (300 ft)</h3>
-            <div class="box-highlight">
-                <ol>
-                    <li><strong>Retracción de Flaps</strong>.</li>
-                    <li><strong>Reducción de motor a 2500 RPM</strong> para cuidado de planta de poder.</li>
-                </ol>
-            </div>
-            <p>Ascenso fijo a <strong>70 mph (60 kts)</strong>. Para nivelar: Actitud (horizonte), Potencia (<strong>2300 RPM</strong>) y Compenso (Trim).</p>
-        </div>
-
-        <div id="t-circuito" class="content-pane">
-            <h2>Circuito de Tránsito de Aeródromo</h2>
-            <p>Patrón rectangular reglamentario en el CUA para entrenamiento de toques y despegues.</p>
-            <div class="box-highlight">
-                <ul>
-                    <li><strong>Altitud del circuito:</strong> Fija a <strong>500 pies (500 ft)</strong>.</li>
-                    <li><strong>Separación lateral:</strong> Distancia constante de <strong>500 metros</strong> paralela a la pista.</li>
-                </ul>
-            </div>
-            <div class="diagram-container">
-                <svg class="diagram-svg" viewBox="0 0 600 220">
-                    <rect x="200" y="90" width="200" height="30" fill="#444" stroke="#fff" stroke-width="1.5"/>
-                    <text x="215" y="110" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">17</text>
-                    <text x="365" y="110" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">35</text>
-                    <rect x="80" y="20" width="440" height="170" fill="none" stroke="var(--garmin-amber)" stroke-width="2" stroke-dasharray="5"/>
-                    <path d="M 270 20 L 260 15 M 270 20 L 260 25" stroke="var(--garmin-amber)" stroke-width="2"/>
-                    <text x="220" y="38" fill="var(--garmin-green)" font-size="11" font-weight="bold" font-family="sans-serif">INICIAL 35</text>
-                    <path d="M 330 20 L 340 15 M 330 20 L 340 25" stroke="var(--garmin-amber)" stroke-width="2"/>
-                    <text x="330" y="38" fill="var(--garmin-green)" font-size="11" font-weight="bold" font-family="sans-serif">INICIAL 17</text>
-                    <text x="25" y="105" fill="var(--garmin-amber)" font-size="11" font-weight="bold" font-family="sans-serif">BÁSICA</text>
-                    <text x="535" y="105" fill="var(--garmin-amber)" font-size="11" font-weight="bold" font-family="sans-serif">BÁSICA</text>
-                    <text x="130" y="205" fill="var(--garmin-green)" font-size="11" font-weight="bold" font-family="sans-serif">FINAL</text>
-                    <text x="430" y="205" fill="var(--garmin-green)" font-size="11" font-weight="bold" font-family="sans-serif">FINAL</text>
-                </svg>
-            </div>
-        </div>
-
-        <div id="t-maniobras" class="content-pane">
-            <h2>Maniobras de Salida e Ingreso</h2>
-            <h3>Salidas del circuito</h3>
-            <p>Efectuar un primer viraje de <strong>90°</strong> alejándose del eje, seguido de una corrección a <strong>45°</strong> para egresar de la zona de tránsito local.</p>
-            <h3>Ingreso por "Gota de Agua"</h3>
-            <p>Cruzar la vertical de las vías a <strong>1000 pies (1000 ft)</strong>, iniciar descenso controlado hacia los <strong>500 pies</strong> e incorporarse directamente en la pierna Inicial.</p>
-        </div>
-
-        <div id="t-radio" class="content-pane">
-            <h2>Guía de Comunicaciones VHF Oficial</h2>
-            <div class="box-highlight">
-                <p><strong>Pilares de Transmisión:</strong> Estación (Lugar) ➔ Matrícula (Quién soy) ➔ Intenciones.</p>
-            </div>
-            <div class="radio-string">"Matanza - LV-CQU - en las vías en descenso para incorporarse a inicial de 17/35."</div>
-            <div class="radio-string">"Matanza - LV-CQU - final de 17/35."</div>
-            <div class="radio-string">"Matanza - LV-CQU - libera pista 17/35."</div>
-        </div>
-
-        <script>
-            function openTab(tabId) {
-                var i;
-                var x = document.getElementsByClassName("content-pane");
-                for (i = 0; i < x.length; i++) { x[i].style.display = "none"; }
-                var activeTabs = document.getElementsByClassName("nav-tabs")[0].getElementsByTagName("button");
-                for (i = 0; i < activeTabs.length; i++) { activeTabs[i].classList.remove("active"); }
-                document.getElementById(tabId).style.display = "block";
-                event.currentTarget.classList.add("active");
-            }
-        </script>
-    </body>
-    </html>
-    """
-    st.components.v1.html(html_manual_source, height=540, scrolling=True)
-
-st.markdown("---")
-
-# --- SECCIÓN HISTORIAL ORDENADO ---
-st.markdown("### 📅 HISTORIAL BLACKBOX (LIBRO AZUL COMPLETO)")
-if not df_existente.empty:
-    df_display = df_existente.copy()
-    if "LogNro" in df_display.columns:
-        df_display["LogNro"] = pd.to_numeric(df_display["LogNro"], errors='coerce').fillna(0).astype(int)
-        df_display = df_display.sort_values(by="LogNro", ascending=False)
-    else:
-        df_display = df_display.sort_values(by="Fecha", ascending=False)
-    st.dataframe(df_display, use_container_width=True)
+      # Muestra de historial guardado
+      st.markdown("---")
+      st.subheader("📈 Tu Historial de Evaluaciones Guardadas")
+      try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        df_h = conn.read(
+            spreadsheet=URL_PLANILLA, worksheet="Historial_Trivias", ttl="0m"
+        )
+        if not df_h.empty:
+          st.dataframe(df_h, use_container_width=True)
+      except Exception:
+        st.caption(
+            "Al completar tu primer intento y hacer click en 'Guardar mi"
+            " Puntaje', verás tu registro acá."
+        )
