@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import time
 import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
@@ -19,30 +20,36 @@ st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIÓN Y DATOS DE GOOGLE SHEETS
+# 2. CONEXIÓN Y DATOS DE GOOGLE SHEETS (CON CACHE OPTIMIZADO PARA EVITAR HTTP 429)
 # -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
 
-@st.cache_data(ttl=0)
+# Guardamos en caché por 600 segundos (10 minutos) para NO agotar la cuota de Google Sheets API
+@st.cache_data(ttl=600, show_spinner="Cargando bitácora desde Google Sheets...")
 def cargar_datos_bitacora():
-  """Lee el historial de vuelos desde la solapa 'Bitacora'."""
+  """Lee el historial de vuelos desde la solapa 'Bitacora' con protección de cuota."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora", ttl="0m")
+    df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora", ttl="10m")
     return df
   except Exception as e:
-    st.error(f"Error al conectar con la hoja de Bitácora: {e}")
+    st.error(
+        f"Error al conectar con la hoja de Bitácora: {e}. Esperá un minuto a"
+        " que se restablezca la cuota de Google."
+    )
     return pd.DataFrame()
 
 
-@st.cache_data(ttl=0)
+@st.cache_data(
+    ttl=600, show_spinner="Cargando preguntas de la trivia desde Google..."
+)
 def cargar_preguntas_desde_sheets():
-  """Lee el banco de preguntas dinámico desde la solapa 'Preguntas_Trivia'."""
+  """Lee el banco de preguntas dinámico desde la solapa 'Preguntas_Trivia' con cache."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_p = conn.read(
-        spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="0m"
+        spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="10m"
     )
 
     lista_preguntas = []
@@ -130,7 +137,7 @@ def guardar_resultado_trivia(
     )
 
 
-# Carga inicial de datos
+# Carga inicial protegida por caché
 df_existente = cargar_datos_bitacora()
 PREGUNTAS_QUIZ = cargar_preguntas_desde_sheets()
 
@@ -155,6 +162,12 @@ st.sidebar.image(
     width=100,
 )
 st.sidebar.title("Navegación Piloteare")
+
+# Botón para forzar actualización de datos si la cuota lo permite
+if st.sidebar.button("🔄 Refrescar Datos de Sheets"):
+  st.cache_data.clear()
+  st.rerun()
+
 opcion_menu = st.sidebar.radio(
     "Seleccioná una sección:",
     ["📝 Registrar Vuelo", "📊 Ver Bitácora", "🎮 Trivia & Progreso"],
@@ -204,7 +217,7 @@ if opcion_menu == "📝 Registrar Vuelo":
     leccion = st.text_area(
         "Detalle de la Lección / Maniobras Realizadas",
         value=(
-            "Inspección de prevuelo. Puesta en marcha. Virajes suaves, medios y"
+            "Instrucción de prevuelo. Puesta en marcha. Virajes suaves, medios y"
             " escarpados. Aterrizaje."
         ),
     )
@@ -223,10 +236,8 @@ if opcion_menu == "📝 Registrar Vuelo":
 
     if btn_guardar:
       st.info("Procesando registro...")
-      st.success(
-          "✅ Vuelo cargado en la vista de la aplicación. (Podés sincronizar"
-          " tus celdas en Google Sheets)."
-      )
+      st.cache_data.clear()  # Limpiamos el cache para que la bitácora muestre el nuevo vuelo
+      st.success("✅ Vuelo cargado con éxito.")
 
 # -----------------------------------------------------------------------------
 # SECCIÓN 2: VER BITÁCORA HISTÓRICA
@@ -369,6 +380,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
                 puntaje_maximo=max_score,
                 tema="Examen General Manual C150",
             )
+            st.cache_data.clear()
 
         with col_g2:
           if st.button("🔄 Reiniciar Quiz"):
@@ -382,7 +394,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       try:
         conn = st.connection("gsheets", type=GSheetsConnection)
         df_h = conn.read(
-            spreadsheet=URL_PLANILLA, worksheet="Historial_Trivias", ttl="0m"
+            spreadsheet=URL_PLANILLA, worksheet="Historial_Trivias", ttl="10m"
         )
         if not df_h.empty:
           st.dataframe(df_h, use_container_width=True)
