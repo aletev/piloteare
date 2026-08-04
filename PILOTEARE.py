@@ -53,7 +53,7 @@ def login():
 
 
 # -----------------------------------------------------------------------------
-# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS (CON CACHÉ OPTIMIZADO)
+# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
@@ -66,51 +66,37 @@ def cargar_datos_bitacora():
     df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora", ttl="10m")
     return df
   except Exception as e:
-    st.error(
-        f"Error al conectar con la hoja de Bitácora: {e}. Esperá un minuto a"
-        " que se restablezca la cuota de Google."
-    )
+    st.error(f"Error al conectar con la hoja de Bitácora: {e}")
     return pd.DataFrame()
 
 
 @st.cache_data(
-    ttl=600, show_spinner="Cargando preguntas de la trivia desde Google..."
+    ttl=600, show_spinner="Cargando banco completo de preguntas..."
 )
-def cargar_preguntas_desde_sheets():
-  """Lee el banco de preguntas desde Sheets y mezcla preguntas y opciones con random.shuffle()."""
+def cargar_banco_preguntas_completo():
+  """Lee el universo completo de preguntas desde Google Sheets."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
     df_p = conn.read(
         spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="10m"
     )
 
-    lista_preguntas = []
+    banco_total = []
     for _, fila in df_p.iterrows():
       if pd.notna(fila.get("Pregunta")):
-        opciones_orig = [
-            str(fila.get("Opcion_A", "")),
-            str(fila.get("Opcion_B", "")),
-            str(fila.get("Opcion_C", "")),
-            str(fila.get("Opcion_D", "")),
-        ]
-        idx_correcta_orig = int(fila.get("Indice_Correcta", 0))
-        texto_respuesta_correcta = opciones_orig[idx_correcta_orig]
-
-        opciones_mezcladas = opciones_orig.copy()
-        random.shuffle(opciones_mezcladas)
-        nuevo_idx_correcto = opciones_mezcladas.index(texto_respuesta_correcta)
-
-        lista_preguntas.append({
+        banco_total.append({
             "categoria": str(fila.get("Categoria", "General")),
             "pregunta": str(fila.get("Pregunta", "")),
-            "opciones": opciones_mezcladas,
-            "correcta": nuevo_idx_correcto,
+            "opciones_orig": [
+                str(fila.get("Opcion_A", "")),
+                str(fila.get("Opcion_B", "")),
+                str(fila.get("Opcion_C", "")),
+                str(fila.get("Opcion_D", "")),
+            ],
+            "correcta_orig": int(fila.get("Indice_Correcta", 0)),
             "explicacion": str(fila.get("Explicacion", "")),
         })
-
-    random.shuffle(lista_preguntas)
-    return lista_preguntas
-
+    return banco_total
   except Exception as e:
     st.warning(
         f"Aviso: No se pudieron cargar preguntas desde 'Preguntas_Trivia': {e}"
@@ -118,10 +104,38 @@ def cargar_preguntas_desde_sheets():
     return []
 
 
+def preparar_tanda_preguntas(banco_total, cantidad_tanda=15):
+  """Selecciona N preguntas al azar del banco y mezcla sus opciones."""
+  if not banco_total:
+    return []
+
+  cant = min(cantidad_tanda, len(banco_total))
+  seleccionadas = random.sample(banco_total, cant)
+
+  tanda_preparada = []
+  for q in seleccionadas:
+    opciones_orig = q["opciones_orig"]
+    texto_correcta = opciones_orig[q["correcta_orig"]]
+
+    opciones_mezcladas = opciones_orig.copy()
+    random.shuffle(opciones_mezcladas)
+    nuevo_idx = opciones_mezcladas.index(texto_correcta)
+
+    tanda_preparada.append({
+        "categoria": q["categoria"],
+        "pregunta": q["pregunta"],
+        "opciones": opciones_mezcladas,
+        "correcta": nuevo_idx,
+        "explicacion": q["explicacion"],
+    })
+
+  return tanda_preparada
+
+
 def guardar_resultado_trivia(
-    puntaje_obtenido, puntaje_maximo, tema="General C150"
+    puntaje_obtenido, puntaje_maximo, tema="Tanda Pre-vuelo C150"
 ):
-  """Guarda la puntuación obtenida en la pestaña 'Historial_Trivias' de Sheets."""
+  """Guarda la puntuación obtenida en la pestaña 'Historial_Trivias'."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -174,15 +188,12 @@ def guardar_resultado_trivia(
         "✅ ¡Puntaje registrado exitosamente en tu pestaña 'Historial_Trivias'!"
     )
   except Exception as e:
-    st.error(
-        f"No se pudo guardar el puntaje. Verificá que la pestaña"
-        f" 'Historial_Trivias' exista en tu Google Sheets. Error: {e}"
-    )
+    st.error(f"No se pudo guardar el puntaje en Sheets: {e}")
 
 
 # Carga inicial protegida por caché
 df_existente = cargar_datos_bitacora()
-PREGUNTAS_QUIZ = cargar_preguntas_desde_sheets()
+BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
 # Flota oficial del CUA
 FLOTA_CUA = {
@@ -215,7 +226,6 @@ opcion_menu = st.sidebar.radio(
     ["📝 Registrar Vuelo", "📊 Ver Bitácora", "🎮 Trivia & Progreso"],
 )
 
-# Login renderizado en la barra lateral
 login()
 
 # -----------------------------------------------------------------------------
@@ -361,32 +371,57 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       st.slider("Aterrizaje y Flare", 1, 10, 8)
       st.slider("Procedimientos de Emergencia", 1, 10, 9)
 
-  # --- TAB 2: TRIVIA INTERACTIVA CON BARRA DE PROGRESO DE PREGUNTAS ---
+  # --- TAB 2: TRIVIA INTERACTIVA (MODO TANDAS CORTAS) ---
   with tab2:
     st.header("🎮 Desafío Teórico: Preguntas de Pre-Vuelo")
-    st.write("Repasá los datos técnicos del Cessna 150 antes de volar con Juan.")
 
-    if not PREGUNTAS_QUIZ:
+    if not BANCO_COMPLETO:
       st.warning(
-          "No se detectaron preguntas en la solapa 'Preguntas_Trivia' de tu"
-          " Google Sheets."
+          "No se cargaron preguntas desde la solapa 'Preguntas_Trivia' de"
+          " Sheets."
       )
     else:
-      if "score" not in st.session_state:
+      # Configuración de tamaño de tanda
+      col_cfg1, col_cfg2 = st.columns([2, 2])
+      with col_cfg1:
+        tanda_sel = st.selectbox(
+            "Seleccioná la cantidad de preguntas para este test:",
+            [15, 10, 20],
+            index=0,
+        )
+      with col_cfg2:
+        if st.button("🎲 Generar Nueva Tanda Aleatoria"):
+          st.session_state.tanda_actual = preparar_tanda_preguntas(
+              BANCO_COMPLETO, tanda_sel
+          )
+          st.session_state.score = 0
+          st.session_state.respondidas = set()
+          st.rerun()
+
+      # Inicialización de tanda en session_state
+      if (
+          "tanda_actual" not in st.session_state
+          or not st.session_state.tanda_actual
+      ):
+        st.session_state.tanda_actual = preparar_tanda_preguntas(
+            BANCO_COMPLETO, tanda_sel
+        )
         st.session_state.score = 0
-      if "respondidas" not in st.session_state:
         st.session_state.respondidas = set()
 
+      preguntas_activas = st.session_state.tanda_actual
       cant_respondidas = len(st.session_state.respondidas)
-      cant_totales = len(PREGUNTAS_QUIZ)
+      cant_totales = len(preguntas_activas)
       progreso_quiz = cant_respondidas / cant_totales if cant_totales > 0 else 0
 
-      # Muestra del score y la barra de progreso
+      st.markdown("---")
+
+      # Score y Barra de progreso
       col_s1, col_s2 = st.columns([3, 1])
       with col_s1:
         st.markdown(
-            f"**Progreso del examen:** {cant_respondidas} de {cant_totales}"
-            f" preguntas ({progreso_quiz*100:.1f}%)"
+            f"**Tanda Actual:** {cant_respondidas} de {cant_totales} preguntas"
+            f" respondidas ({progreso_quiz*100:.1f}%)"
         )
         st.progress(progreso_quiz)
       with col_s2:
@@ -394,8 +429,8 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
       st.markdown("---")
 
-      # Renderizado de preguntas con indicador visual y estado bloqueado
-      for idx, q in enumerate(PREGUNTAS_QUIZ):
+      # Renderizado de la tanda activa
+      for idx, q in enumerate(preguntas_activas):
         esta_respondida = idx in st.session_state.respondidas
         marca_estado = (
             "✅ **[RESPONDIDA]**" if esta_respondida else "⏳ [PENDIENTE]"
@@ -409,12 +444,12 @@ elif opcion_menu == "🎮 Trivia & Progreso":
         opcion_sel = st.radio(
             "Seleccioná tu respuesta:",
             q["opciones"],
-            key=f"q_{idx}",
+            key=f"q_tanda_{idx}",
             disabled=esta_respondida,
         )
 
         if not esta_respondida:
-          if st.button("Confirmar Respuesta", key=f"btn_{idx}"):
+          if st.button("Confirmar Respuesta", key=f"btn_tanda_{idx}"):
             idx_sel = q["opciones"].index(opcion_sel)
             st.session_state.respondidas.add(idx)
 
@@ -432,12 +467,12 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
         st.markdown("---")
 
-      # Módulo al completar todas las preguntas
-      if cant_respondidas == cant_totales:
+      # Al finalizar la tanda activa
+      if cant_respondidas == cant_totales and cant_totales > 0:
         st.balloons()
         max_score = cant_totales * 10
         st.info(
-            f"🎉 **¡Trivia completada!** Lograste **{st.session_state.score} de"
+            f"🎉 **¡Tanda completada!** Lograste **{st.session_state.score} de"
             f" {max_score} puntos posibles**."
         )
 
@@ -450,12 +485,15 @@ elif opcion_menu == "🎮 Trivia & Progreso":
               guardar_resultado_trivia(
                   puntaje_obtenido=st.session_state.score,
                   puntaje_maximo=max_score,
-                  tema="Examen General Manual C150",
+                  tema=f"Tanda Aleatoria ({cant_totales} preg)",
               )
               st.cache_data.clear()
 
         with col_g2:
-          if st.button("🔄 Reiniciar Quiz"):
+          if st.button("🔄 Nueva Tanda Aleatoria"):
+            st.session_state.tanda_actual = preparar_tanda_preguntas(
+                BANCO_COMPLETO, tanda_sel
+            )
             st.session_state.score = 0
             st.session_state.respondidas = set()
             st.rerun()
