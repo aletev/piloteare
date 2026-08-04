@@ -22,7 +22,6 @@ st.markdown("---")
 # -----------------------------------------------------------------------------
 # 2. SISTEMA DE AUTENTICACIÓN / LOGIN
 # -----------------------------------------------------------------------------
-# Credenciales del administrador (Podés cambiarlas acá o cargarlas desde st.secrets)
 USUARIO_ADMIN = "ale"
 PASSWORD_ADMIN = "cua150"
 
@@ -54,7 +53,7 @@ def login():
 
 
 # -----------------------------------------------------------------------------
-# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS
+# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS (CON CACHÉ OPTIMIZADO)
 # -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
@@ -216,7 +215,7 @@ opcion_menu = st.sidebar.radio(
     ["📝 Registrar Vuelo", "📊 Ver Bitácora", "🎮 Trivia & Progreso"],
 )
 
-# Renderizamos la sección de Login al final del sidebar
+# Login renderizado en la barra lateral
 login()
 
 # -----------------------------------------------------------------------------
@@ -362,7 +361,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       st.slider("Aterrizaje y Flare", 1, 10, 8)
       st.slider("Procedimientos de Emergencia", 1, 10, 9)
 
-  # --- TAB 2: TRIVIA INTERACTIVA ---
+  # --- TAB 2: TRIVIA INTERACTIVA CON BARRA DE PROGRESO DE PREGUNTAS ---
   with tab2:
     st.header("🎮 Desafío Teórico: Preguntas de Pre-Vuelo")
     st.write("Repasá los datos técnicos del Cessna 150 antes de volar con Juan.")
@@ -378,45 +377,65 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       if "respondidas" not in st.session_state:
         st.session_state.respondidas = set()
 
+      cant_respondidas = len(st.session_state.respondidas)
+      cant_totales = len(PREGUNTAS_QUIZ)
+      progreso_quiz = cant_respondidas / cant_totales if cant_totales > 0 else 0
+
+      # Muestra del score y la barra de progreso
       col_s1, col_s2 = st.columns([3, 1])
       with col_s1:
-        st.caption(
-            f"Preguntas respondidas:"
-            f" {len(st.session_state.respondidas)} / {len(PREGUNTAS_QUIZ)}"
+        st.markdown(
+            f"**Progreso del examen:** {cant_respondidas} de {cant_totales}"
+            f" preguntas ({progreso_quiz*100:.1f}%)"
         )
+        st.progress(progreso_quiz)
       with col_s2:
         st.subheader(f"🏆 Score: {st.session_state.score} pts")
 
       st.markdown("---")
 
+      # Renderizado de preguntas con indicador visual y estado bloqueado
       for idx, q in enumerate(PREGUNTAS_QUIZ):
-        st.markdown(
-            f"##### ❓ Pregunta {idx + 1} [{q['categoria']}]: {q['pregunta']}"
-        )
-        opcion_sel = st.radio(
-            "Seleccioná tu respuesta:", q["opciones"], key=f"q_{idx}"
+        esta_respondida = idx in st.session_state.respondidas
+        marca_estado = (
+            "✅ **[RESPONDIDA]**" if esta_respondida else "⏳ [PENDIENTE]"
         )
 
-        if st.button("Confirmar Respuesta", key=f"btn_{idx}"):
-          idx_sel = q["opciones"].index(opcion_sel)
-          if idx_sel == q["correcta"]:
-            st.success(f"¡Correcto! +10 pts 👏  \n*{q['explicacion']}*")
-            if idx not in st.session_state.respondidas:
+        st.markdown(
+            f"##### ❓ Pregunta {idx + 1} [{q['categoria']}] {marca_estado}:"
+            f" {q['pregunta']}"
+        )
+
+        opcion_sel = st.radio(
+            "Seleccioná tu respuesta:",
+            q["opciones"],
+            key=f"q_{idx}",
+            disabled=esta_respondida,
+        )
+
+        if not esta_respondida:
+          if st.button("Confirmar Respuesta", key=f"btn_{idx}"):
+            idx_sel = q["opciones"].index(opcion_sel)
+            st.session_state.respondidas.add(idx)
+
+            if idx_sel == q["correcta"]:
               st.session_state.score += 10
-              st.session_state.respondidas.add(idx)
-          else:
-            st.error(
-                f"Incorrecto 😅. La opción correcta era:"
-                f" **{q['opciones'][q['correcta']]}**  \n*{q['explicacion']}*"
-            )
-            if idx not in st.session_state.respondidas:
-              st.session_state.respondidas.add(idx)
+              st.success(f"¡Correcto! +10 pts 👏  \n*{q['explicacion']}*")
+            else:
+              st.error(
+                  f"Incorrecto 😅. La opción correcta era:"
+                  f" **{q['opciones'][q['correcta']]}**  \n*{q['explicacion']}*"
+              )
+            st.rerun()
+        else:
+          st.info("Esta pregunta ya fue respondida.")
 
         st.markdown("---")
 
-      if len(st.session_state.respondidas) == len(PREGUNTAS_QUIZ):
+      # Módulo al completar todas las preguntas
+      if cant_respondidas == cant_totales:
         st.balloons()
-        max_score = len(PREGUNTAS_QUIZ) * 10
+        max_score = cant_totales * 10
         st.info(
             f"🎉 **¡Trivia completada!** Lograste **{st.session_state.score} de"
             f" {max_score} puntos posibles**."
