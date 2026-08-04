@@ -8,7 +8,7 @@ import streamlit as st
 # 1. CONFIGURACIÓN DE PÁGINA
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Desafío C150 - CUA Game",
+    page_title="Desafío PPA C150 - ALE.FPV Game",
     page_icon="✈️",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -100,7 +100,7 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# 3. LECTURA DIRECTA POR CSV DESDE GOOGLE SHEETS (SIN ERROR HTTP 400)
+# 3. LECTURA DIRECTA POR CSV DESDE GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 SHEET_ID = "1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY"
 WORKSHEET_NAME = "Preguntas_Trivia"
@@ -110,7 +110,6 @@ URL_CSV_DIRECTA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tq
 @st.cache_data(ttl=600, show_spinner="🎮 Cargando el banco de preguntas...")
 def cargar_banco_preguntas_completo():
   try:
-    # Intentamos primero delimitador '|' y si falla pasamos a ';' o ','
     try:
       df_p = pd.read_csv(URL_CSV_DIRECTA, sep="|")
       if "Pregunta" not in df_p.columns:
@@ -135,10 +134,7 @@ def cargar_banco_preguntas_completo():
         })
     return banco_total
   except Exception as e:
-    st.error(
-        f"Error al cargar las preguntas: {e}. Verificá que el archivo esté"
-        " compartido como público."
-    )
+    st.error(f"Error al cargar las preguntas: {e}")
     return []
 
 
@@ -172,7 +168,7 @@ def preparar_tanda_preguntas(banco_total, cantidad_tanda=10):
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
 # Header Principal
-st.markdown("<h1>🛩️ CUA TRIVIA SHOW 🏆</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🛩️ PPA TRIVIA SHOW 🏆</h1>", unsafe_allow_html=True)
 st.markdown(
     "<p style='text-align: center; color: #a5b4fc; font-size: 1.1rem;'"
     ">¿Cuánto sabés realmente sobre el Cessna 150?</p>",
@@ -223,25 +219,35 @@ else:
       if st.button("🚀 RESPONDER DESAFÍO DIARIO"):
         st.session_state.pub_desafio_respondido = True
         idx_elegido = q_dia["opciones_orig"].index(opc_dia_sel)
+        st.session_state.pub_desafio_es_correcto = (
+            idx_elegido == q_dia["correcta_orig"]
+        )
 
-        if idx_elegido == q_dia["correcta_orig"]:
+        if st.session_state.pub_desafio_es_correcto:
           st.balloons()
           st.success(
-              "🎉 **¡INCREÍBLE! SUBISTE DE ESCALÓN.**  \n"
-              f"Explicación del Manual: *{q_dia['explicacion']}*"
+              "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
+              f" *{q_dia['explicacion']}*"
           )
         else:
           correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
           st.error(
-              "💥 **¡TE CAÍSTE DEL ESCALÓN!**  \n"
-              f"La respuesta correcta era: **{correcta_texto}**  \n"
-              f"Explicación: *{q_dia['explicacion']}*"
+              "😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+              f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
           )
+        st.rerun()
     else:
-      st.info(
-          "Ya completaste la pregunta del día. ¡Volvé mañana para sumar más"
-          " puntos!"
-      )
+      if st.session_state.get("pub_desafio_es_correcto", False):
+        st.success(
+            "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
+            f" *{q_dia['explicacion']}*"
+        )
+      else:
+        correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
+        st.error(
+            "😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+            f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
+        )
 
   # --- TAB 2: MODO MULTIJUGADOR ---
   with tab_libre:
@@ -262,6 +268,7 @@ else:
         )
         st.session_state.pub_score = 0
         st.session_state.pub_resp = set()
+        st.session_state.pub_resp_detalle = {}
         st.rerun()
 
     if "pub_tanda" not in st.session_state or not st.session_state.pub_tanda:
@@ -270,6 +277,7 @@ else:
       )
       st.session_state.pub_score = 0
       st.session_state.pub_resp = set()
+      st.session_state.pub_resp_detalle = {}
 
     tanda_pub = st.session_state.pub_tanda
     cant_resp_pub = len(st.session_state.pub_resp)
@@ -317,25 +325,28 @@ else:
           st.session_state.pub_resp.add(idx_a)
           idx_amg_correcta = qa["correcta"]
           idx_amg_elegida = qa["opciones"].index(opc_amg_sel)
+          es_correcta = idx_amg_elegida == idx_amg_correcta
 
-          if idx_amg_elegida == idx_amg_correcta:
+          st.session_state.pub_resp_detalle[idx_a] = es_correcta
+
+          if es_correcta:
             st.session_state.pub_score += 10
-            st.success(
-                f"👏 **¡CORRECTO! (+10 pts)**  \nExplicación:"
-                f" *{qa['explicacion']}*"
-            )
-          else:
-            texto_v = qa["opciones"][idx_amg_correcta]
-            st.error(
-                f"❌ **INCORRECTO.**  \nLa respuesta era: **{texto_v}** "
-                f" \nExplicación: *{qa['explicacion']}*"
-            )
+
           st.rerun()
       else:
-        st.info(
-            "Respuesta registrada. Opción correcta:"
-            f" **{qa['opciones'][qa['correcta']]}**"
-        )
+        # Estado guardado de la respuesta
+        fue_correcta = st.session_state.pub_resp_detalle.get(idx_a, False)
+        if fue_correcta:
+          st.success(
+              f"👏 **Cooooorrecto!!!** (+10 pts)  \nExplicación:"
+              f" *{qa['explicacion']}*"
+          )
+        else:
+          texto_v = qa["opciones"][qa["correcta"]]
+          st.error(
+              f"😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+              f" **{texto_v}**  \nExplicación: *{qa['explicacion']}*"
+          )
 
       st.markdown("<br>", unsafe_allow_html=True)
 
@@ -361,4 +372,5 @@ else:
         )
         st.session_state.pub_score = 0
         st.session_state.pub_resp = set()
+        st.session_state.pub_resp_detalle = {}
         st.rerun()
