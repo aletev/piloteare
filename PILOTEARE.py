@@ -238,8 +238,7 @@ def guardar_autoevaluacion_completa(datos_dict):
         data=df_actualizado,
     )
     st.success(
-        "✅ ¡Matriz de 16 Maniobras PPA registrada con éxito en Google"
-        " Sheets!"
+        "✅ ¡Matriz de Maniobras PPA registrada con éxito en Google Sheets!"
     )
   except Exception as e:
     st.error(
@@ -272,16 +271,36 @@ LISTA_MANIOBRAS = [
         "Velocidad de máx. ángulo (VX), máx. régimen (VY) y ascenso normal.",
         "Ascensos",
     ),
-    ("Vuelo recto y nivelado", "Mantención de altitud, rumbo y actitud.", "Vuelo_Recto_Nivelado"),
+    (
+        "Vuelo recto y nivelado",
+        "Mantención de altitud, rumbo y actitud.",
+        "Vuelo_Recto_Nivelado",
+    ),
     (
         "Virajes",
         "Suaves (15°), medios (30°), escarpados (45°+) y virajes en ascenso.",
         "Virajes_Suaves_Medios_Escarpados_Ascenso",
     ),
-    ("Planeos normales", "Velocidad de mejor planeo (70 MPH) y compensación.", "Planeos_Normales"),
-    ("Virajes en planeo", "Mantenimiento de velocidad y actitud sin motor.", "Virajes_en_Planeo"),
-    ("Deslizamiento", "Deslizamiento con alerón y timón opuesto.", "Deslizamiento"),
-    ("Coordinación sobre el eje", "Uso correcto de guiñada adversa y bola centrada.", "Coordinacion_Eje"),
+    (
+        "Planeos normales",
+        "Velocidad de mejor planeo (70 MPH) y compensación.",
+        "Planeos_Normales",
+    ),
+    (
+        "Virajes en planeo",
+        "Mantenimiento de velocidad y actitud sin motor.",
+        "Virajes_en_Planeo",
+    ),
+    (
+        "Deslizamiento",
+        "Deslizamiento con alerón y timón opuesto.",
+        "Deslizamiento",
+    ),
+    (
+        "Coordinación sobre el eje",
+        "Uso correcto de guiñada adversa y bola centrada.",
+        "Coordinacion_Eje",
+    ),
     (
         "Cambio de velocidades & vuelo lento",
         "Línea de vuelo y vuelo lento al límite de pérdida.",
@@ -292,14 +311,44 @@ LISTA_MANIOBRAS = [
         "Recuperación con y sin motor / con y sin flaps.",
         "Perdida_Aproximacion",
     ),
-    ("Maniobras con referencias terrestres", "División de atención fuera de cabina.", "Maniobras_Referencias_Terrestres"),
-    ("Giros alrededor de un punto", "Corrección de deriva por viento.", "Giros_Alrededor_Punto"),
-    ("Virajes en 'S' a través de un camino", "Igualdad de arcos sobre eje lineal.", "Virajes_S_Camino"),
-    ("Ocho alrededor de pilones", "Maniobra de precisión y altitud.", "Ocho_Pilones"),
-    ("Aproximaciones", "Circuitos de aproximación de 90°, 180° y 360°.", "Aproximaciones_90_180_360"),
-    ("Aterrizajes", "Toma normal y viento cruzado (alineación y ala baja).", "Aterrizajes_Viento_Cruzado"),
-    ("Simulación de emergencia", "Falla de motor en vuelo, campo apto y memoria.", "Simulacion_Emergencia"),
+    (
+        "Maniobras con referencias terrestres",
+        "División de atención fuera de cabina.",
+        "Maniobras_Referencias_Terrestres",
+    ),
+    (
+        "Giros alrededor de un punto",
+        "Corrección de deriva por viento.",
+        "Giros_Alrededor_Punto",
+    ),
+    (
+        "Virajes en 'S' a través de un camino",
+        "Igualdad de arcos sobre eje lineal.",
+        "Virajes_S_Camino",
+    ),
+    (
+        "Ocho alrededor de pilones",
+        "Maniobra de precisión y altitud.",
+        "Ocho_Pilones",
+    ),
+    (
+        "Aproximaciones",
+        "Circuitos de aproximación de 90°, 180° y 360°.",
+        "Aproximaciones_90_180_360",
+    ),
+    (
+        "Aterrizajes",
+        "Toma normal y viento cruzado (alineación y ala baja).",
+        "Aterrizajes_Viento_Cruzado",
+    ),
+    (
+        "Simulación de emergencia",
+        "Falla de motor en vuelo, campo apto y memoria.",
+        "Simulacion_Emergencia",
+    ),
 ]
+
+OPCIONES_CALIFICACION = ["N/A"] + [str(n) for n in range(1, 11)]
 
 # -----------------------------------------------------------------------------
 # 4. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
@@ -453,36 +502,39 @@ elif opcion_menu == "🎮 Trivia & Progreso":
     st.markdown("---")
     st.subheader("🎯 Matriz de Autoevaluación de Maniobras PPA (16 Maniobras)")
     st.caption(
-        "Asigná una calificación del **1 al 10** en la columna 'Calificación'"
-        " según tu nivel de confianza en cada maniobra."
+        "Cambiá a una nota del **1 al 10** únicamente las maniobras que"
+        " practicaste en el vuelo de hoy (las no practicadas déjalas en"
+        " **'N/A'**)."
     )
 
-    # Construcción del DataFrame editable para la matriz
+    # Todas arrancan en N/A por defecto
     df_matriz_init = pd.DataFrame({
         "Maniobra PPA": [m[0] for m in LISTA_MANIOBRAS],
         "Detalle de Maniobra": [m[1] for m in LISTA_MANIOBRAS],
-        "Calificación (1-10)": [8] * len(LISTA_MANIOBRAS),
+        "Calificación": ["N/A"] * len(LISTA_MANIOBRAS),
     })
 
-    # Renderizado con la tabla interactiva data_editor
     matriz_editada = st.data_editor(
         df_matriz_init,
         column_config={
             "Maniobra PPA": st.column_config.TextColumn(disabled=True),
             "Detalle de Maniobra": st.column_config.TextColumn(disabled=True),
-            "Calificación (1-10)": st.column_config.SelectboxColumn(
-                "Calificación (1-10)",
-                options=list(range(1, 11)),
+            "Calificación": st.column_config.SelectboxColumn(
+                "Calificación",
+                options=OPCIONES_CALIFICACION,
                 required=True,
-                help="Seleccioná una nota de confianza técnica",
+                help=(
+                    "Elegí N/A si no la practicaste hoy, o asigná nota del 1 al"
+                    " 10"
+                ),
             ),
         },
         use_container_width=True,
         hide_index=True,
-        key="editor_matriz_maniobras",
+        key="editor_matriz_maniobras_v2",
     )
 
-    if st.button("💾 Guardar Matriz de 16 Maniobras en Google Sheets"):
+    if st.button("💾 Guardar Matriz de Maniobras en Google Sheets"):
       if not st.session_state.authenticated:
         st.warning(
             "🔒 Iniciá sesión en la barra lateral para guardar tu"
@@ -492,13 +544,13 @@ elif opcion_menu == "🎮 Trivia & Progreso":
         dict_a_guardar = {}
         for idx, m in enumerate(LISTA_MANIOBRAS):
           clave_col = m[2]
-          nota_sel = matriz_editada.iloc[idx]["Calificación (1-10)"]
+          nota_sel = matriz_editada.iloc[idx]["Calificación"]
           dict_a_guardar[clave_col] = nota_sel
 
         guardar_autoevaluacion_completa(dict_a_guardar)
         st.cache_data.clear()
 
-    # Muestra del historial de autoevaluaciones registradas
+    # Muestra del historial registrado
     st.markdown("---")
     st.subheader("📈 Historial Registrado de Maniobras")
     try:
