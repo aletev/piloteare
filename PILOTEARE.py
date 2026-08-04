@@ -371,10 +371,42 @@ opcion_menu = st.sidebar.radio(
 login()
 
 # -----------------------------------------------------------------------------
-# SECCIÓN 1: REGISTRAR NUEVO VUELO (PROTEGIDO)
+# SECCIÓN 1: REGISTRAR NUEVO VUELO & COTIZACIÓN DEL DÓLAR
 # -----------------------------------------------------------------------------
 if opcion_menu == "📝 Registrar Vuelo":
   st.header("📝 Registrar Nuevo Vuelo (Formato Libro Azul CUA)")
+
+  # --- MÓDULO DE COTIZACIÓN Y CALCULADORA DE COSTOS ---
+  st.subheader("💵 Cotización & Calculadora de Hora de Vuelo")
+  col_cot1, col_cot2, col_cot3 = st.columns(3)
+
+  with col_cot1:
+    tipo_cambio_usd = st.number_input(
+        "Cotización Dólar (ARS/USD)",
+        min_value=1.0,
+        value=1350.0,
+        step=10.0,
+        help="Ingresá la cotización de referencia para el cálculo en USD.",
+    )
+
+  with col_cot2:
+    costo_hora_ars = st.number_input(
+        "Valor Hora de Vuelo (ARS)",
+        min_value=0,
+        value=187700,
+        step=1000,
+        help="Costo oficial por hora de vuelo fijado por el CUA.",
+    )
+
+  with col_cot3:
+    costo_hora_usd = round(costo_hora_ars / tipo_cambio_usd, 2)
+    st.metric(
+        label="Valor Hora en USD",
+        value=f"USD {costo_hora_usd}",
+        delta=f"T.C.: ${tipo_cambio_usd}",
+    )
+
+  st.markdown("---")
 
   if not st.session_state.authenticated:
     st.warning(
@@ -412,8 +444,16 @@ if opcion_menu == "📝 Registrar Vuelo":
         horas_vs = st.number_input(
             "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
         )
-        costo_ars = st.number_input(
-            "Costo Total (ARS)", min_value=0, value=187700, step=1000
+
+        # Cálculo dinámico del costo del vuelo específico en ARS y USD
+        horas_totales_vuelo = horas_dc + horas_vs
+        costo_vuelo_ars = int(horas_totales_vuelo * costo_hora_ars)
+        costo_vuelo_usd = round(horas_totales_vuelo * costo_hora_usd, 2)
+
+        st.text_input(
+            "Costo Total Calculado",
+            value=f"${costo_vuelo_ars:,} ARS / USD {costo_vuelo_usd}",
+            disabled=True,
         )
 
       st.markdown("---")
@@ -507,7 +547,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
         " **'N/A'**)."
     )
 
-    # Todas arrancan en N/A por defecto
     df_matriz_init = pd.DataFrame({
         "Maniobra PPA": [m[0] for m in LISTA_MANIOBRAS],
         "Detalle de Maniobra": [m[1] for m in LISTA_MANIOBRAS],
