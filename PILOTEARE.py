@@ -20,12 +20,45 @@ st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIÓN Y DATOS DE GOOGLE SHEETS
+# 2. SISTEMA DE AUTENTICACIÓN / LOGIN
+# -----------------------------------------------------------------------------
+# Credenciales del administrador (Podés cambiarlas acá o cargarlas desde st.secrets)
+USUARIO_ADMIN = "ale"
+PASSWORD_ADMIN = "cua150"
+
+if "authenticated" not in st.session_state:
+  st.session_state.authenticated = False
+
+
+def login():
+  st.sidebar.markdown("---")
+  st.sidebar.subheader("🔒 Acceso Administrador")
+
+  if not st.session_state.authenticated:
+    user_input = st.sidebar.text_input("Usuario", key="login_user")
+    pass_input = st.sidebar.text_input(
+        "Contraseña", type="password", key="login_pass"
+    )
+    if st.sidebar.button("Iniciar Sesión"):
+      if user_input == USUARIO_ADMIN and pass_input == PASSWORD_ADMIN:
+        st.session_state.authenticated = True
+        st.sidebar.success("¡Bienvenido, Alejandro!")
+        st.rerun()
+      else:
+        st.sidebar.error("Credenciales incorrectas")
+  else:
+    st.sidebar.success("🟢 Sesión Activa: Alejandro")
+    if st.sidebar.button("Cerrar Sesión"):
+      st.session_state.authenticated = False
+      st.rerun()
+
+
+# -----------------------------------------------------------------------------
+# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS
 # -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
 
-# Cache de 10 minutos para proteger la cuota de la API de Google Sheets
 @st.cache_data(ttl=600, show_spinner="Cargando bitácora desde Google Sheets...")
 def cargar_datos_bitacora():
   """Lee el historial de vuelos desde la solapa 'Bitacora'."""
@@ -55,7 +88,6 @@ def cargar_preguntas_desde_sheets():
     lista_preguntas = []
     for _, fila in df_p.iterrows():
       if pd.notna(fila.get("Pregunta")):
-        # 1. Extraer opciones originales e índice correcto
         opciones_orig = [
             str(fila.get("Opcion_A", "")),
             str(fila.get("Opcion_B", "")),
@@ -65,11 +97,8 @@ def cargar_preguntas_desde_sheets():
         idx_correcta_orig = int(fila.get("Indice_Correcta", 0))
         texto_respuesta_correcta = opciones_orig[idx_correcta_orig]
 
-        # 2. Mezclar el orden de las opciones de forma aleatoria
         opciones_mezcladas = opciones_orig.copy()
         random.shuffle(opciones_mezcladas)
-
-        # 3. Reasignar el nuevo índice correcto tras la mezcla
         nuevo_idx_correcto = opciones_mezcladas.index(texto_respuesta_correcta)
 
         lista_preguntas.append({
@@ -80,7 +109,6 @@ def cargar_preguntas_desde_sheets():
             "explicacion": str(fila.get("Explicacion", "")),
         })
 
-    # Mezclar también el orden de presentación de las preguntas
     random.shuffle(lista_preguntas)
     return lista_preguntas
 
@@ -171,7 +199,7 @@ FLOTA_CUA = {
 }
 
 # -----------------------------------------------------------------------------
-# 3. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
+# 4. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
 # -----------------------------------------------------------------------------
 st.sidebar.markdown(
     "<h1 style='text-align: center; margin-bottom: -10px;'>✈️</h1>",
@@ -179,7 +207,6 @@ st.sidebar.markdown(
 )
 st.sidebar.title("Navegación Piloteare")
 
-# Botón para forzar actualización manual de datos
 if st.sidebar.button("🔄 Refrescar Datos de Sheets"):
   st.cache_data.clear()
   st.rerun()
@@ -189,74 +216,84 @@ opcion_menu = st.sidebar.radio(
     ["📝 Registrar Vuelo", "📊 Ver Bitácora", "🎮 Trivia & Progreso"],
 )
 
+# Renderizamos la sección de Login al final del sidebar
+login()
+
 # -----------------------------------------------------------------------------
-# SECCIÓN 1: REGISTRAR NUEVO VUELO
+# SECCIÓN 1: REGISTRAR NUEVO VUELO (PROTEGIDO)
 # -----------------------------------------------------------------------------
 if opcion_menu == "📝 Registrar Vuelo":
   st.header("📝 Registrar Nuevo Vuelo (Formato Libro Azul CUA)")
 
-  with st.form("vuelo_oficial_form", clear_on_submit=True):
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-      fecha_vuelo = st.date_input("Fecha de Vuelo", datetime.date.today())
-      instructor = st.text_input(
-          "Instructor a Cargo", value="Juan Cruz Arrascaeta"
-      )
-      avion_sel = st.selectbox(
-          "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
-      )
-
-    with col2:
-      hora_salida = st.time_input("Hora Salida", datetime.time(12, 0))
-      hora_llegada = st.time_input("Hora Llegada", datetime.time(12, 45))
-      aterrizajes = st.number_input(
-          "Aterrizajes Realizados", min_value=1, value=1
-      )
-
-    with col3:
-      horas_dc = st.number_input(
-          "Horas Doble Comando (DC)",
-          min_value=0.0,
-          max_value=5.0,
-          value=0.8,
-          step=0.1,
-      )
-      horas_vs = st.number_input(
-          "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
-      )
-      costo_ars = st.number_input(
-          "Costo Total (ARS)", min_value=0, value=187700, step=1000
-      )
-
-    st.markdown("---")
-    leccion = st.text_area(
-        "Detalle de la Lección / Maniobras Realizadas",
-        value=(
-            "Instrucción de prevuelo. Puesta en marcha. Virajes suaves, medios y"
-            " escarpados. Aterrizaje."
-        ),
+  if not st.session_state.authenticated:
+    st.warning(
+        "🔒 Esta sección está protegida. Por favor, iniciá sesión en la barra"
+        " lateral para registrar vuelos."
     )
-    anecdotario = st.text_area(
-        "Anecdotario / Sensaciones Personales",
-        value=(
-            "Muy buen desempeño en los virajes escarpados. Felicitaciones de"
-            " Juan."
-        ),
-    )
-    meteorologia = st.text_input(
-        "Meteorología / Pista en Uso", value="Viento 8 nudos del Este. Pista 35"
-    )
+  else:
+    with st.form("vuelo_oficial_form", clear_on_submit=True):
+      col1, col2, col3 = st.columns(3)
 
-    btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
+      with col1:
+        fecha_vuelo = st.date_input("Fecha de Vuelo", datetime.date.today())
+        instructor = st.text_input(
+            "Instructor a Cargo", value="Juan Cruz Arrascaeta"
+        )
+        avion_sel = st.selectbox(
+            "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
+        )
 
-    if btn_guardar:
-      st.info("Procesando registro...")
-      st.cache_data.clear()
-      st.success("✅ Vuelo cargado con éxito.")
+      with col2:
+        hora_salida = st.time_input("Hora Salida", datetime.time(12, 0))
+        hora_llegada = st.time_input("Hora Llegada", datetime.time(12, 45))
+        aterrizajes = st.number_input(
+            "Aterrizajes Realizados", min_value=1, value=1
+        )
+
+      with col3:
+        horas_dc = st.number_input(
+            "Horas Doble Comando (DC)",
+            min_value=0.0,
+            max_value=5.0,
+            value=0.8,
+            step=0.1,
+        )
+        horas_vs = st.number_input(
+            "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
+        )
+        costo_ars = st.number_input(
+            "Costo Total (ARS)", min_value=0, value=187700, step=1000
+        )
+
+      st.markdown("---")
+      leccion = st.text_area(
+          "Detalle de la Lección / Maniobras Realizadas",
+          value=(
+              "Instrucción de prevuelo. Puesta en marcha. Virajes suaves,"
+              " medios y escarpados. Aterrizaje."
+          ),
+      )
+      anecdotario = st.text_area(
+          "Anecdotario / Sensaciones Personales",
+          value=(
+              "Muy buen desempeño en los virajes escarpados. Felicitaciones de"
+              " Juan."
+          ),
+      )
+      meteorologia = st.text_input(
+          "Meteorología / Pista en Uso",
+          value="Viento 8 nudos del Este. Pista 35",
+      )
+
+      btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
+
+      if btn_guardar:
+        st.info("Procesando registro...")
+        st.cache_data.clear()
+        st.success("✅ Vuelo cargado con éxito.")
 
 # -----------------------------------------------------------------------------
-# SECCIÓN 2: VER BITÁCORA HISTÓRICA
+# SECCIÓN 2: VER BITÁCORA HISTÓRICA (PÚBLICA)
 # -----------------------------------------------------------------------------
 elif opcion_menu == "📊 Ver Bitácora":
   st.header("📊 Libro de Vuelo Digital (Historial Registrado)")
@@ -333,8 +370,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
     if not PREGUNTAS_QUIZ:
       st.warning(
           "No se detectaron preguntas en la solapa 'Preguntas_Trivia' de tu"
-          " Google Sheets. Por favor pega el archivo CSV que armamos en esa"
-          " pestaña."
+          " Google Sheets."
       )
     else:
       if "score" not in st.session_state:
@@ -353,7 +389,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
       st.markdown("---")
 
-      # Renderizado de preguntas
       for idx, q in enumerate(PREGUNTAS_QUIZ):
         st.markdown(
             f"##### ❓ Pregunta {idx + 1} [{q['categoria']}]: {q['pregunta']}"
@@ -379,7 +414,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
         st.markdown("---")
 
-      # Finalización y Guardado
       if len(st.session_state.respondidas) == len(PREGUNTAS_QUIZ):
         st.balloons()
         max_score = len(PREGUNTAS_QUIZ) * 10
@@ -390,13 +424,16 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
         col_g1, col_g2 = st.columns(2)
         with col_g1:
-          if st.button("💾 Guardar mi Puntaje en Google Sheets"):
-            guardar_resultado_trivia(
-                puntaje_obtenido=st.session_state.score,
-                puntaje_maximo=max_score,
-                tema="Examen General Manual C150",
-            )
-            st.cache_data.clear()
+          if not st.session_state.authenticated:
+            st.warning("🔒 Iniciá sesión en la barra lateral para guardar.")
+          else:
+            if st.button("💾 Guardar mi Puntaje en Google Sheets"):
+              guardar_resultado_trivia(
+                  puntaje_obtenido=st.session_state.score,
+                  puntaje_maximo=max_score,
+                  tema="Examen General Manual C150",
+              )
+              st.cache_data.clear()
 
         with col_g2:
           if st.button("🔄 Reiniciar Quiz"):
@@ -404,7 +441,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             st.session_state.respondidas = set()
             st.rerun()
 
-      # Muestra de historial guardado
       st.markdown("---")
       st.subheader("📈 Tu Historial de Evaluaciones Guardadas")
       try:
@@ -415,7 +451,4 @@ elif opcion_menu == "🎮 Trivia & Progreso":
         if not df_h.empty:
           st.dataframe(df_h, use_container_width=True)
       except Exception:
-        st.caption(
-            "Al completar tu primer intento y hacer click en 'Guardar mi"
-            " Puntaje', verás tu registro acá."
-        )
+        st.caption("Aún no hay historial de evaluaciones registrado.")
