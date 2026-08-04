@@ -157,9 +157,9 @@ FLOTA_CUA = {
 # -----------------------------------------------------------------------------
 # 3. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
 # -----------------------------------------------------------------------------
-st.sidebar.image(
-    "https://img.freepik.com/vector-premium/icono-vectorial-avion-estilo-plano-diseno-simbolo-avion_678131-4198.jpg",
-    width=100,
+st.sidebar.markdown(
+    "<h1 style='text-align: center; margin-bottom: -10px;'>✈️</h1>",
+    unsafe_allow_html=True,
 )
 st.sidebar.title("Navegación Piloteare")
 
