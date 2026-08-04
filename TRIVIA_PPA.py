@@ -219,13 +219,15 @@ else:
       if st.button("🚀 RESPONDER DESAFÍO DIARIO"):
         st.session_state.pub_desafio_respondido = True
         idx_elegido = q_dia["opciones_orig"].index(opc_dia_sel)
-        st.session_state.pub_desafio_es_correcto = (
-            idx_elegido == q_dia["correcta_orig"]
-        )
+        es_correcto = idx_elegido == q_dia["correcta_orig"]
+        st.session_state.pub_desafio_es_correcto = es_correcto
+
+        # Disparo de efecto visual inmediato según resultado
+        if es_correcto:
+          st.balloons()
         st.rerun()
     else:
       if st.session_state.get("pub_desafio_es_correcto", False):
-        st.balloons()
         st.success(
             "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
             f" *{q_dia['explicacion']}*"
@@ -233,7 +235,7 @@ else:
       else:
         correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
         st.error(
-            "😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+            "😭 😢 😭 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
             f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
         )
 
@@ -322,6 +324,7 @@ else:
 
           if es_correcta:
             st.session_state.pub_score += 10
+            st.balloons()  # Globos únicamente al confirmar una respuesta CORRECTA
 
           st.rerun()
       else:
@@ -334,14 +337,14 @@ else:
         else:
           texto_v = qa["opciones"][qa["correcta"]]
           st.error(
-              f"😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+              f"😭 😢 😭 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
               f" **{texto_v}**  \nExplicación: *{qa['explicacion']}*"
           )
 
       st.markdown("<br>", unsafe_allow_html=True)
 
+    # Pantalla de finalización de tanda
     if cant_resp_pub == tot_pub and tot_pub > 0:
-      st.balloons()
       max_pub_pts = tot_pub * 10
       pct_pub = round((st.session_state.pub_score / max_pub_pts) * 100, 1)
 
