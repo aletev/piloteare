@@ -191,6 +191,63 @@ def guardar_resultado_trivia(
     st.error(f"No se pudo guardar el puntaje en Sheets: {e}")
 
 
+def guardar_autoevaluacion_completa(datos_dict):
+  """Guarda las 16 maniobras en la pestaña 'Autoevaluacion_Maniobras'."""
+  try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+
+    cols_esperadas = [
+        "Fecha_Hora",
+        "Ascensos",
+        "Vuelo_Recto_Nivelado",
+        "Virajes_Suaves_Medios_Escarpados_Ascenso",
+        "Planeos_Normales",
+        "Virajes_en_Planeo",
+        "Deslizamiento",
+        "Coordinacion_Eje",
+        "Cambio_Velocidades_Vuelo_Lento",
+        "Perdida_Aproximacion",
+        "Maniobras_Referencias_Terrestres",
+        "Giros_Alrededor_Punto",
+        "Virajes_S_Camino",
+        "Ocho_Pilones",
+        "Aproximaciones_90_180_360",
+        "Aterrizajes_Viento_Cruzado",
+        "Simulacion_Emergencia",
+    ]
+
+    try:
+      df_eval = conn.read(
+          spreadsheet=URL_PLANILLA,
+          worksheet="Autoevaluacion_Maniobras",
+          ttl="0m",
+      )
+    except Exception:
+      df_eval = pd.DataFrame(columns=cols_esperadas)
+
+    datos_dict["Fecha_Hora"] = datetime.datetime.now().strftime(
+        "%Y-%m-%d %H:%M"
+    )
+
+    df_actualizado = pd.concat(
+        [df_eval, pd.DataFrame([datos_dict])], ignore_index=True
+    )
+    conn.update(
+        spreadsheet=URL_PLANILLA,
+        worksheet="Autoevaluacion_Maniobras",
+        data=df_actualizado,
+    )
+    st.success(
+        "✅ ¡Matriz de 16 Maniobras PPA registrada con éxito en Google"
+        " Sheets!"
+    )
+  except Exception as e:
+    st.error(
+        f"No se pudo guardar la autoevaluación. Verificá la solapa"
+        f" 'Autoevaluacion_Maniobras'. Error: {e}"
+    )
+
+
 # Carga inicial protegida por caché
 df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
@@ -207,6 +264,42 @@ FLOTA_CUA = {
     "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
     "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
 }
+
+# Lista de 16 Maniobras Oficiales PPA ANAC
+LISTA_MANIOBRAS = [
+    (
+        "Ascensos",
+        "Velocidad de máx. ángulo (VX), máx. régimen (VY) y ascenso normal.",
+        "Ascensos",
+    ),
+    ("Vuelo recto y nivelado", "Mantención de altitud, rumbo y actitud.", "Vuelo_Recto_Nivelado"),
+    (
+        "Virajes",
+        "Suaves (15°), medios (30°), escarpados (45°+) y virajes en ascenso.",
+        "Virajes_Suaves_Medios_Escarpados_Ascenso",
+    ),
+    ("Planeos normales", "Velocidad de mejor planeo (70 MPH) y compensación.", "Planeos_Normales"),
+    ("Virajes en planeo", "Mantenimiento de velocidad y actitud sin motor.", "Virajes_en_Planeo"),
+    ("Deslizamiento", "Deslizamiento con alerón y timón opuesto.", "Deslizamiento"),
+    ("Coordinación sobre el eje", "Uso correcto de guiñada adversa y bola centrada.", "Coordinacion_Eje"),
+    (
+        "Cambio de velocidades & vuelo lento",
+        "Línea de vuelo y vuelo lento al límite de pérdida.",
+        "Cambio_Velocidades_Vuelo_Lento",
+    ),
+    (
+        "Pérdida y aproximación a la pérdida",
+        "Recuperación con y sin motor / con y sin flaps.",
+        "Perdida_Aproximacion",
+    ),
+    ("Maniobras con referencias terrestres", "División de atención fuera de cabina.", "Maniobras_Referencias_Terrestres"),
+    ("Giros alrededor de un punto", "Corrección de deriva por viento.", "Giros_Alrededor_Punto"),
+    ("Virajes en 'S' a través de un camino", "Igualdad de arcos sobre eje lineal.", "Virajes_S_Camino"),
+    ("Ocho alrededor de pilones", "Maniobra de precisión y altitud.", "Ocho_Pilones"),
+    ("Aproximaciones", "Circuitos de aproximación de 90°, 180° y 360°.", "Aproximaciones_90_180_360"),
+    ("Aterrizajes", "Toma normal y viento cruzado (alineación y ala baja).", "Aterrizajes_Viento_Cruzado"),
+    ("Simulación de emergencia", "Falla de motor en vuelo, campo apto y memoria.", "Simulacion_Emergencia"),
+]
 
 # -----------------------------------------------------------------------------
 # 4. NAVEGACIÓN Y MENÚ LATERAL (SIDEBAR)
@@ -319,7 +412,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       ["📈 Mi Progreso de Horas PPA", "🧠 Trivia de Pre-vuelo C150"]
   )
 
-  # --- TAB 1: PROGRESO DE HORAS ---
+  # --- TAB 1: PROGRESO DE HORAS & MATRIZ DE MANIOBRAS PPA ---
   with tab1:
     st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
@@ -358,18 +451,69 @@ elif opcion_menu == "🎮 Trivia & Progreso":
     )
 
     st.markdown("---")
-    st.subheader("🎯 Matriz de Autoevaluación de Maniobras")
-    cm1, cm2 = st.columns(2)
-    with cm1:
-      st.slider(
-          "Virajes Escarpados", 1, 10, 9, help="¡Felicitaciones del 30/07!"
+    st.subheader("🎯 Matriz de Autoevaluación de Maniobras PPA (16 Maniobras)")
+    st.caption(
+        "Asigná una calificación del **1 al 10** en la columna 'Calificación'"
+        " según tu nivel de confianza en cada maniobra."
+    )
+
+    # Construcción del DataFrame editable para la matriz
+    df_matriz_init = pd.DataFrame({
+        "Maniobra PPA": [m[0] for m in LISTA_MANIOBRAS],
+        "Detalle de Maniobra": [m[1] for m in LISTA_MANIOBRAS],
+        "Calificación (1-10)": [8] * len(LISTA_MANIOBRAS),
+    })
+
+    # Renderizado con la tabla interactiva data_editor
+    matriz_editada = st.data_editor(
+        df_matriz_init,
+        column_config={
+            "Maniobra PPA": st.column_config.TextColumn(disabled=True),
+            "Detalle de Maniobra": st.column_config.TextColumn(disabled=True),
+            "Calificación (1-10)": st.column_config.SelectboxColumn(
+                "Calificación (1-10)",
+                options=list(range(1, 11)),
+                required=True,
+                help="Seleccioná una nota de confianza técnica",
+            ),
+        },
+        use_container_width=True,
+        hide_index=True,
+        key="editor_matriz_maniobras",
+    )
+
+    if st.button("💾 Guardar Matriz de 16 Maniobras en Google Sheets"):
+      if not st.session_state.authenticated:
+        st.warning(
+            "🔒 Iniciá sesión en la barra lateral para guardar tu"
+            " autoevaluación."
+        )
+      else:
+        dict_a_guardar = {}
+        for idx, m in enumerate(LISTA_MANIOBRAS):
+          clave_col = m[2]
+          nota_sel = matriz_editada.iloc[idx]["Calificación (1-10)"]
+          dict_a_guardar[clave_col] = nota_sel
+
+        guardar_autoevaluacion_completa(dict_a_guardar)
+        st.cache_data.clear()
+
+    # Muestra del historial de autoevaluaciones registradas
+    st.markdown("---")
+    st.subheader("📈 Historial Registrado de Maniobras")
+    try:
+      conn = st.connection("gsheets", type=GSheetsConnection)
+      df_m = conn.read(
+          spreadsheet=URL_PLANILLA,
+          worksheet="Autoevaluacion_Maniobras",
+          ttl="10m",
       )
-      st.slider("Actitud, Potencia y Compensación", 1, 10, 8)
-      st.slider("Comunicación por Radio (CUA / Matanza)", 1, 10, 8)
-    with cm2:
-      st.slider("Inspección de Pre-vuelo & Chequeo", 1, 10, 9)
-      st.slider("Aterrizaje y Flare", 1, 10, 8)
-      st.slider("Procedimientos de Emergencia", 1, 10, 9)
+      if not df_m.empty:
+        st.dataframe(df_m, use_container_width=True)
+      else:
+        st.caption("Aún no registraste ninguna autoevaluación de maniobras.")
+    except Exception:
+      st.caption("Aún no registraste ninguna autoevaluación de maniobras.")
 
   # --- TAB 2: TRIVIA INTERACTIVA (MODO TANDAS CORTAS) ---
   with tab2:
@@ -381,7 +525,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           " Sheets."
       )
     else:
-      # Configuración de tamaño de tanda
       col_cfg1, col_cfg2 = st.columns([2, 2])
       with col_cfg1:
         tanda_sel = st.selectbox(
@@ -398,7 +541,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           st.session_state.respondidas = set()
           st.rerun()
 
-      # Inicialización de tanda en session_state
       if (
           "tanda_actual" not in st.session_state
           or not st.session_state.tanda_actual
@@ -416,7 +558,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
       st.markdown("---")
 
-      # Score y Barra de progreso
       col_s1, col_s2 = st.columns([3, 1])
       with col_s1:
         st.markdown(
@@ -429,7 +570,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
       st.markdown("---")
 
-      # Renderizado de la tanda activa
       for idx, q in enumerate(preguntas_activas):
         esta_respondida = idx in st.session_state.respondidas
         marca_estado = (
@@ -467,7 +607,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
         st.markdown("---")
 
-      # Al finalizar la tanda activa
       if cant_respondidas == cant_totales and cant_totales > 0:
         st.balloons()
         max_score = cant_totales * 10
