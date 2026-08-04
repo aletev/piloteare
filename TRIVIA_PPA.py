@@ -3,7 +3,6 @@ import datetime
 import random
 import pandas as pd
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -16,12 +15,12 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# 2. DISEÑO CSS INTERACTIVO (ETIQUETA <style> CORREGIDA)
+# 2. DISEÑO CSS INTERACTIVO (GAME SHOW / 8 ESCALONES)
 # -----------------------------------------------------------------------------
 st.markdown(
     """
 <style>
-    /* Fondo con degradado animado estilo juego */
+    /* Fondo con degradado estilo juego */
     .stApp {
         background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
         color: #ffffff;
@@ -101,19 +100,23 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS
+# 3. LECTURA DIRECTA POR CSV DESDE GOOGLE SHEETS (SIN ERROR HTTP 400)
 # -----------------------------------------------------------------------------
-URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit#gid=0"
+SHEET_ID = "1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY"
+WORKSHEET_NAME = "Preguntas_Trivia"
+URL_CSV_DIRECTA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={WORKSHEET_NAME}"
 
 
-@st.cache_data(ttl=600, show_spinner="🎮 Cargando el juego...")
+@st.cache_data(ttl=600, show_spinner="🎮 Cargando el banco de preguntas...")
 def cargar_banco_preguntas_completo():
   try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    # Corrección de conexión sin parámetros incompatibles
-    df_p = conn.read(
-        spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="10m"
-    )
+    # Intentamos primero delimitador '|' y si falla pasamos a ';' o ','
+    try:
+      df_p = pd.read_csv(URL_CSV_DIRECTA, sep="|")
+      if "Pregunta" not in df_p.columns:
+        df_p = pd.read_csv(URL_CSV_DIRECTA, sep=";")
+    except Exception:
+      df_p = pd.read_csv(URL_CSV_DIRECTA)
 
     banco_total = []
     for _, fila in df_p.iterrows():
@@ -133,8 +136,8 @@ def cargar_banco_preguntas_completo():
     return banco_total
   except Exception as e:
     st.error(
-        f"Error al cargar las preguntas: {e}. Verificá que la pestaña"
-        " 'Preguntas_Trivia' sea pública."
+        f"Error al cargar las preguntas: {e}. Verificá que el archivo esté"
+        " compartido como público."
     )
     return []
 
