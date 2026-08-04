@@ -253,6 +253,10 @@ else:
   with tab_libre:
     st.markdown("### 🪜 Desafío de Escalones")
 
+    # Aseguramos la existencia de los diccionarios de estado
+    if "pub_resp_detalle" not in st.session_state:
+      st.session_state.pub_resp_detalle = {}
+
     col_cfg1, col_cfg2 = st.columns([2, 2])
     with col_cfg1:
       cant_amigos_sel = st.selectbox(
@@ -334,7 +338,6 @@ else:
 
           st.rerun()
       else:
-        # Estado guardado de la respuesta
         fue_correcta = st.session_state.pub_resp_detalle.get(idx_a, False)
         if fue_correcta:
           st.success(
