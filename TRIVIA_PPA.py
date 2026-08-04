@@ -16,11 +16,11 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# 2. DISEÑO CSS INTERACTIVO (TIPO GAMING / 8 ESCALONES / CANDY CRUSH)
+# 2. DISEÑO CSS INTERACTIVO (ETIQUETA <style> CORREGIDA)
 # -----------------------------------------------------------------------------
 st.markdown(
     """
-<stylePlugin>
+<style>
     /* Fondo con degradado animado estilo juego */
     .stApp {
         background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
@@ -59,7 +59,7 @@ st.markdown(
         margin-bottom: 12px;
     }
 
-    /* Botones con estilo Arcade / Candy Crush (Sombras 3D y efecto press) */
+    /* Botones estilo Arcade / Candy Crush */
     .stButton > button {
         background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
         color: #ffffff !important;
@@ -95,7 +95,7 @@ st.markdown(
         color: #f3f4f6 !important;
         font-size: 1.05rem !important;
     }
-</stylePlugin>
+</style>
 """,
     unsafe_allow_html=True,
 )
@@ -103,13 +103,14 @@ st.markdown(
 # -----------------------------------------------------------------------------
 # 3. CONEXIÓN Y DATOS DE GOOGLE SHEETS
 # -----------------------------------------------------------------------------
-URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
+URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit#gid=0"
 
 
 @st.cache_data(ttl=600, show_spinner="🎮 Cargando el juego...")
 def cargar_banco_preguntas_completo():
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
+    # Corrección de conexión sin parámetros incompatibles
     df_p = conn.read(
         spreadsheet=URL_PLANILLA, worksheet="Preguntas_Trivia", ttl="10m"
     )
@@ -131,7 +132,10 @@ def cargar_banco_preguntas_completo():
         })
     return banco_total
   except Exception as e:
-    st.error(f"Error al cargar las preguntas: {e}")
+    st.error(
+        f"Error al cargar las preguntas: {e}. Verificá que la pestaña"
+        " 'Preguntas_Trivia' sea pública."
+    )
     return []
 
 
@@ -231,9 +235,12 @@ else:
               f"Explicación: *{q_dia['explicacion']}*"
           )
     else:
-      st.info("Ya completaste la pregunta del día. ¡Volvé mañana para sumar más puntos!")
+      st.info(
+          "Ya completaste la pregunta del día. ¡Volvé mañana para sumar más"
+          " puntos!"
+      )
 
-  # --- TAB 2: MODO MULTIJUGADOR ESTILO 8 ESCALONES ---
+  # --- TAB 2: MODO MULTIJUGADOR ---
   with tab_libre:
     st.markdown("### 🪜 Desafío de Escalones")
 
@@ -266,7 +273,6 @@ else:
     tot_pub = len(tanda_pub)
     progreso = cant_resp_pub / tot_pub if tot_pub > 0 else 0
 
-    # Marcadores visuales de juego
     col_m1, col_m2 = st.columns([3, 1])
     with col_m1:
       st.markdown(
@@ -275,7 +281,8 @@ else:
       st.progress(progreso)
     with col_m2:
       st.markdown(
-          f"<h3 style='margin:0; text-align:right;'>⭐ {st.session_state.pub_score} pts</h3>",
+          f"<h3 style='margin:0; text-align:right;'>⭐"
+          f" {st.session_state.pub_score} pts</h3>",
           unsafe_allow_html=True,
       )
 
@@ -311,22 +318,24 @@ else:
           if idx_amg_elegida == idx_amg_correcta:
             st.session_state.pub_score += 10
             st.success(
-                f"👏 **¡CORRECTO! (+10 pts)**  \nExplicación: *{qa['explicacion']}*"
+                f"👏 **¡CORRECTO! (+10 pts)**  \nExplicación:"
+                f" *{qa['explicacion']}*"
             )
           else:
             texto_v = qa["opciones"][idx_amg_correcta]
             st.error(
-                f"❌ **INCORRECTO.**  \nLa respuesta era: **{texto_v}**  \nExplicación: *{qa['explicacion']}*"
+                f"❌ **INCORRECTO.**  \nLa respuesta era: **{texto_v}** "
+                f" \nExplicación: *{qa['explicacion']}*"
             )
           st.rerun()
       else:
         st.info(
-            f"Respuesta registrada. Opción correcta: **{qa['opciones'][qa['correcta']]}**"
+            "Respuesta registrada. Opción correcta:"
+            f" **{qa['opciones'][qa['correcta']]}**"
         )
 
       st.markdown("<br>", unsafe_allow_html=True)
 
-    # Pantalla final de victoria / puntaje
     if cant_resp_pub == tot_pub and tot_pub > 0:
       st.balloons()
       max_pub_pts = tot_pub * 10
