@@ -222,22 +222,10 @@ else:
         st.session_state.pub_desafio_es_correcto = (
             idx_elegido == q_dia["correcta_orig"]
         )
-
-        if st.session_state.pub_desafio_es_correcto:
-          st.balloons()
-          st.success(
-              "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
-              f" *{q_dia['explicacion']}*"
-          )
-        else:
-          correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
-          st.error(
-              "😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
-              f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
-          )
         st.rerun()
     else:
       if st.session_state.get("pub_desafio_es_correcto", False):
+        st.balloons()
         st.success(
             "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
             f" *{q_dia['explicacion']}*"
@@ -249,11 +237,10 @@ else:
             f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
         )
 
-  # --- TAB 2: MODO MULTIJUGADOR ---
+  # --- TAB 2: MODO MULTIJUGADOR ESTILO 8 ESCALONES ---
   with tab_libre:
     st.markdown("### 🪜 Desafío de Escalones")
 
-    # Aseguramos la existencia de los diccionarios de estado
     if "pub_resp_detalle" not in st.session_state:
       st.session_state.pub_resp_detalle = {}
 
