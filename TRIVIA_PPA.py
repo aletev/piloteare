@@ -105,7 +105,7 @@ st.markdown(
 # -----------------------------------------------------------------------------
 # 3. LECTURA DIRECTA POR CSV DESDE GOOGLE SHEETS
 # -----------------------------------------------------------------------------
-SHEET_ID = "TU_SHEET_ID_AQUI"
+SHEET_ID = "1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY"
 WORKSHEET_NAME = "Preguntas_Trivia"
 URL_CSV_DIRECTA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={WORKSHEET_NAME}"
 
