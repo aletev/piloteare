@@ -350,7 +350,10 @@ else:
 if cant_resp_pub == tot_pub and tot_pub > 0:
     max_pub_pts = tot_pub * 10
     pct_pub = round((st.session_state.pub_score / max_pub_pts) * 100, 1)
-
+    
+    # Corrección para acceder a la base de datos y archivo correctamente
+    banco_completo = pd.read_csv('base_de_datos.csv') # Reemplaza 'base_de_datos.csv' con el nombre correcto del archivo
+    
     st.markdown(
         f"""
         <div class="game-card" style="text-align: center; background: rgba(16, 185, 129, 0.2);">
