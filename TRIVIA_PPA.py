@@ -109,7 +109,6 @@ SHEET_ID = "TU_SHEET_ID_AQUI"
 WORKSHEET_NAME = "Preguntas_Trivia"
 URL_CSV_DIRECTA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={WORKSHEET_NAME}"
 
-
 @st.cache_data(ttl=600, show_spinner="🎮 Cargando el banco de preguntas...")
 def cargar_banco_preguntas_completo():
     try:
