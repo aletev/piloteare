@@ -104,6 +104,69 @@ def cargar_banco_preguntas_completo():
     return []
 
 
+def guardar_vuelo_bitacora(datos_vuelo):
+  """Escribe el vuelo registrado en la solapa 'Bitacora' autoincrementando LogNro."""
+  try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+
+    cols_esperadas = [
+        "LogNro",
+        "Fecha",
+        "Aeronave",
+        "Matricula",
+        "Piloto_Instructor",
+        "Hora_Salida",
+        "Hora_Llegada",
+        "Horas_DC",
+        "Horas_VS",
+        "Horas_Totales",
+        "Aterrizajes",
+        "Detalle_Leccion",
+        "Anecdotario",
+        "Meteorologia",
+        "Costo_ARS",
+        "Costo_USD",
+    ]
+
+    try:
+      df_bitacora = conn.read(
+          spreadsheet=URL_PLANILLA, worksheet="Bitacora", ttl="0m"
+      )
+    except Exception:
+      df_bitacora = pd.DataFrame(columns=cols_esperadas)
+
+    # Calculamos el siguiente LogNro autoincremental
+    if (
+        not df_bitacora.empty
+        and "LogNro" in df_bitacora.columns
+        and pd.notna(df_bitacora["LogNro"]).any()
+    ):
+      ultimo_log = (
+          pd.to_numeric(df_bitacora["LogNro"], errors="coerce").max()
+      )
+      nuevo_log = int(ultimo_log) + 1 if pd.notna(ultimo_log) else 1
+    else:
+      nuevo_log = 1
+
+    datos_vuelo["LogNro"] = nuevo_log
+
+    # Concatenamos y actualizamos la hoja
+    df_actualizado = pd.concat(
+        [df_bitacora, pd.DataFrame([datos_vuelo])], ignore_index=True
+    )
+    conn.update(
+        spreadsheet=URL_PLANILLA, worksheet="Bitacora", data=df_actualizado
+    )
+    st.success(
+        f"✅ ¡Vuelo N° {nuevo_log} registrado exitosamente en tu Bitácora"
+        " Digital!"
+    )
+    return True
+  except Exception as e:
+    st.error(f"Error al guardar el vuelo en Google Sheets: {e}")
+    return False
+
+
 def preparar_tanda_preguntas(banco_total, cantidad_tanda=15):
   """Selecciona N preguntas al azar del banco y mezcla sus opciones."""
   if not banco_total:
@@ -436,7 +499,7 @@ if opcion_menu == "📝 Registrar Vuelo":
             "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
         )
 
-        horas_totales_vuelo = horas_dc + horas_vs
+        horas_totales_vuelo = round(horas_dc + horas_vs, 1)
         costo_vuelo_ars = int(horas_totales_vuelo * costo_hora_ars)
         costo_vuelo_usd = round(horas_totales_vuelo * costo_hora_usd, 2)
 
@@ -469,9 +532,27 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
-        st.info("Procesando registro...")
-        st.cache_data.clear()
-        st.success("✅ Vuelo cargado con éxito.")
+        info_aeronave = FLOTA_CUA[avion_sel]
+        registro_vuelo = {
+            "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
+            "Aeronave": info_aeronave["modelo"],
+            "Matricula": info_aeronave["mat"],
+            "Piloto_Instructor": instructor,
+            "Hora_Salida": hora_salida.strftime("%H:%M"),
+            "Hora_Llegada": hora_llegada.strftime("%H:%M"),
+            "Horas_DC": horas_dc,
+            "Horas_VS": horas_vs,
+            "Horas_Totales": horas_totales_vuelo,
+            "Aterrizajes": aterrizajes,
+            "Detalle_Leccion": leccion,
+            "Anecdotario": anecdotario,
+            "Meteorologia": meteorologia,
+            "Costo_ARS": costo_vuelo_ars,
+            "Costo_USD": costo_vuelo_usd,
+        }
+
+        if guardar_vuelo_bitacora(registro_vuelo):
+          st.cache_data.clear()
 
 # -----------------------------------------------------------------------------
 # SECCIÓN 2: VER BITÁCORA HISTÓRICA (PÚBLICA)
@@ -682,7 +763,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             else:
               st.error(
                   f"Incorrecto 😅. La opción correcta era:"
-                  f" **{q['opciones'][q['correcta']]}**  \n*{q['explicacion']}*"
+                  f" **{q['opciones'][q['correcta']]}** \n*{q['explicacion']}*"
               )
             st.rerun()
         else:
@@ -732,7 +813,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       except Exception:
         st.caption("Aún no hay historial de evaluaciones registrado.")
 
-  # --- TAB 3: TRIVIA DESAFÍO & AMIGOS (NUEVO) ---
+  # --- TAB 3: TRIVIA DESAFÍO & AMIGOS ---
   with tab3:
     st.header("👥 Trivia Express para Compartir & Desafío Diario")
     st.info(
@@ -747,7 +828,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       # --- BLOQUE 1: PREGUNTA DESAFÍO DEL DÍA ---
       st.subheader("🔥 Pregunta Desafío del Día (Nivel Leyenda)")
 
-      # Seleccionamos una pregunta fija del día usando el día del año
       dia_del_ano = datetime.date.today().timetuple().tm_yday
       idx_desafio = dia_del_ano % len(BANCO_COMPLETO)
       q_dia = BANCO_COMPLETO[idx_desafio]
@@ -756,7 +836,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           f"##### 🎯 **[Tema: {q_dia['categoria']}]** {q_dia['pregunta']}"
       )
 
-      # Preparación de la pregunta del día sin alterar el estado global
       if "desafio_respondido" not in st.session_state:
         st.session_state.desafio_respondido = False
 
@@ -775,14 +854,14 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           if idx_elegido == q_dia["correcta_orig"]:
             st.balloons()
             st.success(
-                "🎉 **¡ACERTARSTE EL DESAFÍO DEL DÍA!**  \nExplicación técnica:"
+                "🎉 **¡ACERTARSTE EL DESAFÍO DEL DÍA!** \nExplicación técnica:"
                 f" *{q_dia['explicacion']}*"
             )
           else:
             correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
             st.error(
                 f"❌ **Incorrecto.** La respuesta correcta era:"
-                f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
+                f" **{correcta_texto}** \nExplicación: *{q_dia['explicacion']}*"
             )
       else:
         st.caption("Ya respondiste el desafío de hoy. ¡Volvé mañana para más!")
@@ -829,7 +908,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       )
       st.markdown("---")
 
-      # Iteración de la trivia casual con feedback directo
       for idx_a, qa in enumerate(tanda_amg):
         ya_resp = idx_a in st.session_state.resp_amigos
         lbl_st = "✅ [RESPONDIDA]" if ya_resp else "⏳ [PENDIENTE]"
@@ -859,13 +937,13 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             if idx_amg_elegida == idx_amg_correcta:
               st.session_state.score_amigos += 10
               st.success(
-                  f"👏 **¡CORRECTO! (+10 pts)**  \n*{qa['explicacion']}*"
+                  f"👏 **¡CORRECTO! (+10 pts)** \n*{qa['explicacion']}*"
               )
             else:
               texto_v = qa["opciones"][idx_amg_correcta]
               st.error(
-                  f"❌ **INCORRECTO.**  \nLa opción correcta en realidad era:"
-                  f" **{texto_v}**  \n*{qa['explicacion']}*"
+                  f"❌ **INCORRECTO.** \nLa opción correcta en realidad era:"
+                  f" **{texto_v}** \n*{qa['explicacion']}*"
               )
             st.rerun()
         else:
@@ -876,14 +954,13 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
         st.markdown("---")
 
-      # Score Final
       if cant_resp_amg == tot_amg and tot_amg > 0:
         st.balloons()
         max_amg_pts = tot_amg * 10
         pct_amg = round((st.session_state.score_amigos / max_amg_pts) * 100, 1)
 
         st.success(
-            f"🏆 **¡FIN DEL JUEGO!**  \nPuntaje Final:"
+            f"🏆 **¡FIN DEL JUEGO!** \nPuntaje Final:"
             f" **{st.session_state.score_amigos} de {max_amg_pts} pts**"
             f" ({pct_amg}% de efectividad)."
         )
