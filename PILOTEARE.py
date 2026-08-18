@@ -113,15 +113,14 @@ def guardar_vuelo_bitacora(datos_vuelo):
         "LogNro",
         "Fecha",
         "Aeronave",
-        "Matricula",
-        "Piloto_Instructor",
+        "Instructor",
         "Hora_Salida",
         "Hora_Llegada",
         "Horas_DC",
         "Horas_VS",
         "Horas_Totales",
         "Aterrizajes",
-        "Detalle_Leccion",
+        "Leccion",
         "Anecdotario",
         "Meteorologia",
         "Costo_ARS",
@@ -315,17 +314,17 @@ df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
 # Flota oficial del CUA
-FLOTA_CUA = {
-    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
-    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
-    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
-    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
-    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
-    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
-    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
-    "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
-    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
-}
+FLOTA_CUA = [
+    "LV-LGF (Cessna 150)",
+    "LV-JPK (Cessna 150)",
+    "LV-CQU (Cessna 150)",
+    "LV-JIF (Cessna 150)",
+    "LV-CHE (Cessna 150)",
+    "LV-OEE (Cessna 152)",
+    "LV-IKE (Cessna 172)",
+    "LV-S042 (Tecnam)",
+    "Otro / Avión Visitante",
+]
 
 # Lista de 16 Maniobras Oficiales PPA ANAC
 LISTA_MANIOBRAS = [
@@ -476,9 +475,7 @@ if opcion_menu == "📝 Registrar Vuelo":
         instructor = st.text_input(
             "Instructor a Cargo", value="Juan Cruz Arrascaeta"
         )
-        avion_sel = st.selectbox(
-            "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
-        )
+        avion_sel = st.selectbox("Aeronave del CUA", FLOTA_CUA, index=3)
 
       with col2:
         hora_salida = st.time_input("Hora Salida", datetime.time(12, 0))
@@ -532,19 +529,17 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
-        info_aeronave = FLOTA_CUA[avion_sel]
         registro_vuelo = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
-            "Aeronave": info_aeronave["modelo"],
-            "Matricula": info_aeronave["mat"],
-            "Piloto_Instructor": instructor,
+            "Aeronave": avion_sel,
+            "Instructor": instructor,
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales_vuelo,
             "Aterrizajes": aterrizajes,
-            "Detalle_Leccion": leccion,
+            "Leccion": leccion,
             "Anecdotario": anecdotario,
             "Meteorologia": meteorologia,
             "Costo_ARS": costo_vuelo_ars,
