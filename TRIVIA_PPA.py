@@ -8,7 +8,7 @@ import streamlit as st
 # 1. CONFIGURACIÓN DE PÁGINA
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Desafío PPA C150 - ALE.FPV Game",
+    page_title="Desafío C150 - CUA Game",
     page_icon="✈️",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -89,10 +89,14 @@ st.markdown(
         border-radius: 10px;
     }
 
-    /* Radios estilizados */
-    .stRadio label {
-        color: #f3f4f6 !important;
+    /* Radios estilizados: fuerza el color blanco en texto e íconos para celulares */
+    .stRadio, .stRadio label, .stRadio p, .stRadio div {
+        color: #ffffff !important;
         font-size: 1.05rem !important;
+    }
+
+    .stRadio [role="radiogroup"] {
+        color: #ffffff !important;
     }
 </style>
 """,
@@ -168,7 +172,7 @@ def preparar_tanda_preguntas(banco_total, cantidad_tanda=10):
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
 # Header Principal
-st.markdown("<h1>🛩️ PPA TRIVIA SHOW 🏆</h1>", unsafe_allow_html=True)
+st.markdown("<h1>🛩️ CUA TRIVIA SHOW 🏆</h1>", unsafe_allow_html=True)
 st.markdown(
     "<p style='text-align: center; color: #a5b4fc; font-size: 1.1rem;'"
     ">¿Cuánto sabés realmente sobre el Cessna 150?</p>",
@@ -219,15 +223,13 @@ else:
       if st.button("🚀 RESPONDER DESAFÍO DIARIO"):
         st.session_state.pub_desafio_respondido = True
         idx_elegido = q_dia["opciones_orig"].index(opc_dia_sel)
-        es_correcto = idx_elegido == q_dia["correcta_orig"]
-        st.session_state.pub_desafio_es_correcto = es_correcto
-
-        # Disparo de efecto visual inmediato según resultado
-        if es_correcto:
-          st.balloons()
+        st.session_state.pub_desafio_es_correcto = (
+            idx_elegido == q_dia["correcta_orig"]
+        )
         st.rerun()
     else:
       if st.session_state.get("pub_desafio_es_correcto", False):
+        st.balloons()
         st.success(
             "👏 **Cooooorrecto!!!**  \nExplicación del Manual:"
             f" *{q_dia['explicacion']}*"
@@ -235,7 +237,7 @@ else:
       else:
         correcta_texto = q_dia["opciones_orig"][q_dia["correcta_orig"]]
         st.error(
-            "😭 😢 😭 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+            "😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
             f" **{correcta_texto}**  \nExplicación: *{q_dia['explicacion']}*"
         )
 
@@ -324,7 +326,6 @@ else:
 
           if es_correcta:
             st.session_state.pub_score += 10
-            st.balloons()  # Globos únicamente al confirmar una respuesta CORRECTA
 
           st.rerun()
       else:
@@ -337,14 +338,14 @@ else:
         else:
           texto_v = qa["opciones"][qa["correcta"]]
           st.error(
-              f"😭 😢 😭 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
+              f"😅 **Ups!!! esa no es!**  \nLa respuesta correcta era:"
               f" **{texto_v}**  \nExplicación: *{qa['explicacion']}*"
           )
 
       st.markdown("<br>", unsafe_allow_html=True)
 
-    # Pantalla de finalización de tanda
     if cant_resp_pub == tot_pub and tot_pub > 0:
+      st.balloons()
       max_pub_pts = tot_pub * 10
       pct_pub = round((st.session_state.pub_score / max_pub_pts) * 100, 1)
 
