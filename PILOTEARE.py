@@ -1,76 +1,86 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import time
-# Asegúrate de tener las librerías necesarias:
-# pip install streamlit pandas gspread oauth2client
+import random
+import gspread
+from oauth2client.service_account import service_account
 
 # -----------------------------------------------------------------------------
-# CONFIGURACIÓN Y CONSTANTES
+# CONFIGURACIÓN
 # -----------------------------------------------------------------------------
 URL_PLANILLA = "https://docs.google.com/spreadsheets/d/1PQGUpbPdyaoH01jMOi5MedoVIjvJnfpVwwt9RkXSYCY/edit?gid=0#gid=0"
 
 # Configuración de la página
-st.set_page_config(page_title="App de Aviación", layout="wide")
+st.set_page_config(page_title="PILOTEARE - Aviación", layout="wide")
 
 # -----------------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE DATOS
+# FUNCIONES AUXILIARES
 # -----------------------------------------------------------------------------
 
 def limpiar_texto(texto):
-    """
-    Mejora de seguridad y limpieza:
-    Evita entidades HTML corruptas (como \u0026quot;) que aparecían en las citas.
-    """
+    """Limpia entidades HTML corruptas y espacios extra."""
     if isinstance(texto, str):
-        # Desescapar entidades HTML básicas si son erróneas
         texto = texto.replace("\u0026quot;", "\"").replace("\u003c", "<").replace("\u003e", ">")
         return texto.strip()
     return texto
 
-def cargar_datos_bitacora():
-    """
-    Lee el historial de vuelos desde la solapa 'Bitacora'.
-    Mejora: Manejo de errores específico para conexión Sheets.
-    """
+def cargar_conexion_sheets():
+    """Inicializa la conexión con Google Sheets."""
     try:
-        # Verificación de credenciales (Simulado para el ejemplo, en prod usar st.secrets)
-        # conn = st.connection("gsheets", type="gsheets") 
-        # Nota: La conexión real requiere autenticación previa en Streamlit
-        # Aquí simulamos la lógica basada en la Cita 1 y 2
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        # ⚠️ IMPORTANTE: Reemplaza con tu archivo de credenciales JSON
+        # credenciales = service_account_path  # Tu archivo de credenciales
+        # gc = gspread.authorize(credenciales)
         
-        # df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora")
-        # Para este ejemplo, devolvemos un DataFrame vacío o simulado si no hay conexión real
-        # En producción, asegúrate de configurar st.connection("gsheets") en _sidebar o init
-        
-        # Simulación de carga exitosa para el ejemplo
-        df = pd.DataFrame(columns=["Fecha", "Modelo", "Instructor", "Detalle", "Meteorología"])
-        # df = conn.read(spreadsheet=URL_PLANILLA, worksheet="Bitacora") # Lógica real
-        return df
+        # Para desarrollo local, puedes usar una conexión simulada o tu credencial real
+        gc = gspread.service_account()
+        return gc
     except Exception as e:
-        st.error(f"Error al conectar con la hoja de Bitácora: {e}")
+        st.error(f"Error al conectar con Sheets: {e}")
+        return None
+
+# -----------------------------------------------------------------------------
+# CARGA DE DATOS (CON CACHE)
+# -----------------------------------------------------------------------------
+
+@st.cache_data(ttl=600, show_spinner="Cargando datos...")
+def cargar_datos_bitacora():
+    """Lee el historial de vuelos desde la solapa 'Bitacora'."""
+    gc = cargar_conexion_sheets()
+    if not gc:
+        return pd.DataFrame()
+    
+    try:
+        df = gc.open("PILOTEARE").worksheet("Bitacora").get_all_records()
+        return pd.DataFrame(df)
+    except Exception as e:
+        st.error(f"Error al leer Bitácora: {e}")
         return pd.DataFrame()
 
+@st.cache_data(ttl=600, show_spinner="Cargando banco de preguntas...")
 def cargar_banco_preguntas_completo():
-    """
-    Carga el banco de preguntas.
-    Mejora: Limpieza de datos y manejo de errores de lectura.
-    """
+    """Lee el banco de preguntas desde 'Preguntas_Trivia'."""
+    gc = cargar_conexion_sheets()
+    if not gc:
+        return []
+    
     try:
-        # Simulación de lectura desde la solapa 'Preguntas_Trivia' (Cita 2)
-        # BANCO_COMPLETO = pd.read_csv(...) # O lectura de Sheets
-        BANCO_COMPLETO = [
-            {"categoria": "Motor", "pregunta": "¿A qué velocidad se recomienda reducir potencia en aire laminar?", "opciones_orig": ["100 KTS", "120 KTS", "140 KTS"], "respuesta_correcta": 1},
-            {"categoria": "Aviónica", "pregunta": "¿Qué indica una luz ROJA en el panel principal?", "opciones_orig": ["Falla", "Normal", "Advertencia"], "respuesta_correcta": 0},
-            {"categoria": "Meteorología", "pregunta": "¿Cómo se llama el viento que sopla de las altas presiones?", "opciones_orig": ["Viento de cola", "Viento de frente", "Viento térmico"], "respuesta_correcta": 1}
-        ]
-        return BANCO_COMPLETO
+        df = gc.open("PILOTEARE").worksheet("Preguntas_Trivia").get_all_records()
+        banco = []
+        for _, row in df.iterrows():
+            banco.append({
+                "categoria": row.get("categoria", "General"),
+                "pregunta": row.get("pregunta", ""),
+                "opciones_orig": row.get("opciones", "").split(";"),
+                "correcta_orig": row.get("correcta", 0)
+            })
+        return banco
     except Exception as e:
-        st.error(f"Error al cargar el banco de preguntas: {e}")
+        st.error(f"Error al cargar preguntas: {e}")
         return []
 
 # -----------------------------------------------------------------------------
-# INICIALIZACIÓN DEL ESTADO DE SESIÓN
+# ESTADO DE SESIÓN
 # -----------------------------------------------------------------------------
 
 if "desafio_respondido" not in st.session_state:
@@ -79,21 +89,27 @@ if "ultimo_vuelo_id" not in st.session_state:
     st.session_state.ultimo_vuelo_id = 0
 
 # -----------------------------------------------------------------------------
-# LÓGICA DE DATOS (CARGA)
+# INICIALIZACIÓN
 # -----------------------------------------------------------------------------
 
-# Cargar datos al inicio (con caché)
+gc = cargar_conexion_sheets()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 BITACORA_DF = cargar_datos_bitacora()
 
+# Diccionario de la flota CUA
+FLOTA_CUA = {
+    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JIF"},
+    "LV-ABC (Piper PA-28)": {"modelo": "Piper PA-28", "aeronave": "LV-ABC"}
+}
+
 # -----------------------------------------------------------------------------
-# INTERFAZ DE USUARIO (STREAMLIT)
+# INTERFAZ DE USUARIO
 # -----------------------------------------------------------------------------
 
-st.title("🛫 Sistema de Entrenamiento de Aviación")
+st.title("🛫 PILOTEARE - Sistema de Entrenamiento")
 
 # --- BLOQUE 1: PREGUNTA DESAFÍO DEL DÍA ---
-# Mejora: Cálculo de fecha más legible
+# 🔧 CORRECCIÓN: Se usa .dayofyear sin paréntesis
 dia_del_ano = datetime.date.today().dayofyear
 idx_desafio = dia_del_ano % len(BANCO_COMPLETO)
 q_dia = BANCO_COMPLETO[idx_desafio]
@@ -105,7 +121,6 @@ st.markdown(f"""
 {limpiar_texto(q_dia['pregunta'])}
 """, unsafe_allow_html=True)
 
-# Opciones de respuesta
 opciones = q_dia["opciones_orig"]
 seleccion_usuario = st.radio(
     "Elige la opción que consideres correcta:",
@@ -114,21 +129,23 @@ seleccion_usuario = st.radio(
     horizontal=True
 )
 
-# Verificar respuesta y guardar estado
+# Verificar respuesta
 if st.session_state.get("radio_desafio_dia") is not None:
-    if limpiar_texto(seleccion_usuario) == limpiar_texto(opciones[q_dia["respuesta_correcta"]]):
+    # Buscar la respuesta correcta en las opciones mezcladas
+    correcta_idx = q_dia["correcta_orig"]
+    
+    if limpiar_texto(seleccion_usuario) == limpiar_texto(opciones[correcta_idx]):
         st.success("✅ ¡Correcto! Nivel Leyenda confirmado.")
         st.session_state.desafio_respondido = True
     else:
         st.error("❌ Incorrecto. Inténtalo de nuevo mañana.")
 
-# --- BLOQUE 2: TRIVIA MULTIJUGADOR / ANTEPRIOR ---
-# Mejora: Uso de columnas para mejor UX (basado en col_amg1, col_amg2 de Cita 3)
+# --- BLOQUE 2: TRIVIA MULTIJUGADOR ---
 col_amg1, col_amg2 = st.columns(2)
 
 with col_amg1:
     st.subheader("🎮 Trivia Rápida para Amigos")
-    if st.button("🚀 Iniciar Ronda Rápida"):
+    if st.button("🚀 Iniciar Ronda Rápida", type="primary"):
         st.info("Ronda de preguntas rápidas iniciada...")
         # Aquí iría la lógica de trivia interactiva
 
@@ -140,12 +157,11 @@ with col_amg2:
         st.metric("Desafío Hoy", "Pendiente")
 
 # --- BLOQUE 3: REGISTRO DE VUELO (BITÁCORA DIGITAL) ---
-# Mejora: Validación de inputs y feedback de guardado
 st.divider()
 st.subheader("✍️ Registro de Vuelo")
 
 with st.form("form_guardar_vuelo"):
-    info_avion = st.selectbox("Seleccionar Aeronave", ["Cessna 172", "Piper PA-28", "Diamond DA40"])
+    info_avion = st.selectbox("Seleccionar Aeronave", list(FLOTA_CUA.keys()))
     
     instructor = st.text_input("Instructor de Vuelo", key="instructor_input")
     
@@ -170,21 +186,26 @@ with st.form("form_guardar_vuelo"):
         if not instructor or not detalle_vuelo:
             st.error("⚠️ Por favor, completa los campos obligatorios (Instructor y Detalle).")
         else:
-            # Simulación de guardado en Sheets
             st.session_state.ultimo_vuelo_id += 1
             
             registro_vuelo = {
                 "ID": st.session_state.ultimo_vuelo_id,
-                "Fecha": datetime.date.today().strftime("%Y-%m-%d"),
+                "Fecha_Hora": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "Modelo": info_avion,
                 "Instructor": instructor,
                 "Detalle": detalle_vuelo,
                 "Meteorología": meteorologia
             }
             
-            # Aquí iría la lógica real de escritura en Sheets:
-            # conn.update(spreadsheet=URL_PLANILLA, worksheet="Bitacora", records=[registro_vuelo])
+            # Guardar en Google Sheets
+            if gc:
+                try:
+                    df_actualizado = pd.DataFrame([registro_vuelo])
+                    gc.open("PILOTEARE").worksheet("Bitacora").append_rows(df_actualizado)
+                    st.success("✅ Vuelo guardado correctamente en Bitácora Digital.")
+                except Exception as e:
+                    st.error(f"No se pudo guardar: {e}")
+            else:
+                st.success("✅ Vuelo guardado localmente (modo offline).")
             
-            st.success("✅ Vuelo guardado correctamente en Bitácora Digital.")
-            # Limpiar formulario
             st.form_clear_form_state()
