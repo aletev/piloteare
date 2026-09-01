@@ -19,7 +19,7 @@ st.title("✈️ Piloteare - Libro de Vuelo & Entrenamiento PPA")
 st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
-# Estilo personalizado para asegurar envolvente de texto en tablas dataframe
+# Estilo personalizado para asegurar el salto de línea en las celdas del dataframe
 st.markdown(
     """
     <style>
@@ -565,14 +565,23 @@ if opcion_menu == "📝 Registrar Vuelo":
         st.cache_data.clear()
 
 # -----------------------------------------------------------------------------
-# SECCIÓN 2: VER BITÁCORA HISTÓRICA (PÚBLICA)
+# SECCIÓN 2: VER BITÁCORA HISTÓRICA (CON DETALLE DE FILA SELECCIONADA)
 # -----------------------------------------------------------------------------
 elif opcion_menu == "📊 Ver Bitácora":
   st.header("📊 Libro de Vuelo Digital (Historial Registrado)")
+
   if not df_existente.empty:
-    st.dataframe(
+    st.info(
+        "💡 **Tip:** Seleccioná una fila haciendo clic en la casilla o celda"
+        " para ver arriba la tarjeta completa con el detalle del vuelo."
+    )
+
+    # DataFrame interactivo con modo de selección de una fila
+    evento_seleccion = st.dataframe(
         df_existente,
         use_container_width=True,
+        on_select="rerun",
+        selection_mode="single-row",
         column_config={
             "Leccion": st.column_config.TextColumn(
                 "Lección / Detalle",
@@ -584,6 +593,63 @@ elif opcion_menu == "📊 Ver Bitácora":
             ),
         },
     )
+
+    # Evaluación de selección de fila
+    filas_seleccionadas = evento_seleccion.get("selection", {}).get("rows", [])
+
+    if filas_seleccionadas:
+      idx_fila = filas_seleccionadas[0]
+      vuelo = df_existente.iloc[idx_fila]
+
+      # Despliegue del detalle arriba de la tabla
+      with st.container(border=True):
+        st.subheader(
+            f"🔍 Detalle del Vuelo N° {vuelo.get('LogNro', idx_fila + 1)} —"
+            f" {vuelo.get('Fecha', 'S/D')}"
+        )
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(f"**✈️ Aeronave:** {vuelo.get('Aeronave', 'N/A')}")
+        c2.markdown(f"**👨‍✈️ Instructor:** {vuelo.get('Instructor', 'N/A')}")
+        c3.markdown(
+            f"**⏱️ Horario:** {vuelo.get('Hora_Salida', '--')} a"
+            f" {vuelo.get('Hora_Llegada', '--')}"
+        )
+        c4.markdown(
+            f"**🛬 Aterrizajes:** {vuelo.get('Aterrizajes', 'N/A')} T&G"
+        )
+
+        c5, c6, c7, c8 = st.columns(4)
+        c5.markdown(f"**⏱️ Horas DC:** {vuelo.get('Horas_DC', 0)} hs")
+        c6.markdown(f"**⏱️ Horas VS:** {vuelo.get('Horas_VS', 0)} hs")
+        c7.markdown(
+            f"**⏱️ Total Vuelo:** {vuelo.get('Horas_Totales', 0)} hs"
+        )
+        c8.markdown(
+            f"**🌤️ Meteorología:** {vuelo.get('Meteorologia', 'N/A')}"
+        )
+
+        st.markdown("---")
+
+        c9, c10 = st.columns(2)
+        c9.markdown(
+            f"**💰 Costo ARS:**"
+            f" ${pd.to_numeric(vuelo.get('Costo_ARS'), errors='coerce') or 0:,.0f}"
+        )
+        c10.markdown(
+            f"**💵 Costo USD:** USD"
+            f" {pd.to_numeric(vuelo.get('Costo_USD'), errors='coerce') or 0:,.2f}"
+        )
+
+        st.markdown("---")
+
+        st.markdown("### 📝 Lección / Maniobras Realizadas")
+        st.write(vuelo.get("Leccion", "Sin detalle registrado."))
+
+        st.markdown("### 📖 Anecdotario & Sensaciones")
+        st.write(vuelo.get("Anecdotario", "Sin anécdotas registradas."))
+
+      st.markdown("---")
   else:
     st.warning("No se encontraron vuelos o no se pudo sincronizar con Sheets.")
 
@@ -597,7 +663,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       "👥 Trivia Desafío & Amigos (Casual)",
   ])
 
-  # --- TAB 1: PROGRESO DE HORAS & COSTO ACUMULADO ---
+  # --- TAB 1: PROGRESO DE HORAS, COSTO ACUMULADO & MATRIZ DE MANIOBRAS ---
   with tab1:
     st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
@@ -989,3 +1055,24 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           )
 
         st.markdown("---")
+
+      if cant_resp_amg == tot_amg and tot_amg > 0:
+        st.balloons()
+        max_amg_pts = tot_amg * 10
+        pct_amg = round(
+            (st.session_state.score_amigos / max_amg_pts) * 100, 1
+        )
+
+        st.success(
+            f"🏆 **¡FIN DEL JUEGO!** \nPuntaje Final:"
+            f" **{st.session_state.score_amigos} de {max_amg_pts} pts**"
+            f" ({pct_amg}% de efectividad)."
+        )
+
+        if st.button("🔄 Jugar otra ronda"):
+          st.session_state.tanda_amigos = preparar_tanda_preguntas(
+              BANCO_COMPLETO, cant_amigos_sel
+          )
+          st.session_state.score_amigos = 0
+          st.session_state.resp_amigos = set()
+          st.rerun()
