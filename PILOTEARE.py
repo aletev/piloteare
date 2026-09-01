@@ -19,6 +19,19 @@ st.title("✈️ Piloteare - Libro de Vuelo & Entrenamiento PPA")
 st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
+# Estilo personalizado para asegurar envolvente de texto en tablas dataframe
+st.markdown(
+    """
+    <style>
+    div[data-testid="stDataFrame"] table td {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
 # -----------------------------------------------------------------------------
 # 2. SISTEMA DE AUTENTICACIÓN / LOGIN
 # -----------------------------------------------------------------------------
@@ -105,27 +118,26 @@ def cargar_banco_preguntas_completo():
 
 
 def guardar_vuelo_bitacora(datos_vuelo):
-  """Escribe el vuelo registrado en la solapa 'Bitacora' autoincrementando LogNro."""
+  """Guarda un nuevo registro de vuelo en la pestaña 'Bitacora' autoincrementando 'LogNro'."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
 
     cols_esperadas = [
         "LogNro",
         "Fecha",
-        "Modelo",
-        "Aeronave",
         "Instructor",
+        "Aeronave",
         "Hora_Salida",
         "Hora_Llegada",
+        "Aterrizajes",
         "Horas_DC",
         "Horas_VS",
         "Horas_Totales",
-        "Aterrizajes",
+        "Costo_ARS",
+        "Costo_USD",
         "Leccion",
         "Anecdotario",
         "Meteorologia",
-        "Costo_ARS",
-        "Costo_USD",
     ]
 
     try:
@@ -135,36 +147,28 @@ def guardar_vuelo_bitacora(datos_vuelo):
     except Exception:
       df_bitacora = pd.DataFrame(columns=cols_esperadas)
 
-    # Calculamos el siguiente LogNro autoincremental (+1)
-    if (
-        not df_bitacora.empty
-        and "LogNro" in df_bitacora.columns
-        and pd.notna(df_bitacora["LogNro"]).any()
-    ):
-      ultimo_log = (
-          pd.to_numeric(df_bitacora["LogNro"], errors="coerce").max()
+    if not df_bitacora.empty and "LogNro" in df_bitacora.columns:
+      log_nros_validos = pd.to_numeric(
+          df_bitacora["LogNro"], errors="coerce"
+      ).dropna()
+      proximo_id = (
+          int(log_nros_validos.max()) + 1 if not log_nros_validos.empty else 1
       )
-      nuevo_log = int(ultimo_log) + 1 if pd.notna(ultimo_log) else 1
     else:
-      nuevo_log = 1
+      proximo_id = 1
 
-    datos_vuelo["LogNro"] = nuevo_log
+    datos_vuelo["LogNro"] = proximo_id
+    df_nuevo = pd.DataFrame([datos_vuelo])
+    df_actualizado = pd.concat([df_bitacora, df_nuevo], ignore_index=True)
 
-    # Concatenamos y actualizamos la hoja
-    df_actualizado = pd.concat(
-        [df_bitacora, pd.DataFrame([datos_vuelo])], ignore_index=True
-    )
     conn.update(
         spreadsheet=URL_PLANILLA, worksheet="Bitacora", data=df_actualizado
     )
     st.success(
-        f"✅ ¡Vuelo N° {nuevo_log} registrado exitosamente en tu Bitácora"
-        " Digital!"
+        f"✅ ¡Vuelo N° {proximo_id} registrado exitosamente en Google Sheets!"
     )
-    return True
   except Exception as e:
-    st.error(f"Error al guardar el vuelo en Google Sheets: {e}")
-    return False
+    st.error(f"No se pudo guardar el vuelo en Sheets: {e}")
 
 
 def preparar_tanda_preguntas(banco_total, cantidad_tanda=15):
@@ -314,17 +318,17 @@ def guardar_autoevaluacion_completa(datos_dict):
 df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
-# Diccionario de la flota CUA separado por modelo y matrícula
+# Flota oficial del CUA
 FLOTA_CUA = {
-    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JIF"},
-    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-LGF"},
-    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JPK"},
-    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-CQU"},
-    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-CHE"},
-    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "aeronave": "LV-OEE"},
-    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "aeronave": "LV-IKE"},
-    "LV-S042 (Tecnam P92)": {"modelo": "Tecnam P92", "aeronave": "LV-S042"},
-    "Otro / Avión Visitante": {"modelo": "Otro", "aeronave": "LV-"},
+    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
+    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
+    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
+    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
+    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
+    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
+    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
+    "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
+    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
 }
 
 # Lista de 16 Maniobras Oficiales PPA ANAC
@@ -444,12 +448,20 @@ if opcion_menu == "📝 Registrar Vuelo":
 
   with col_cot1:
     tipo_cambio_usd = st.number_input(
-        "Cotización Dólar (ARS/USD)", min_value=1.0, value=1350.0, step=10.0
+        "Cotización Dólar (ARS/USD)",
+        min_value=1.0,
+        value=1530.0,
+        step=10.0,
+        help="Cotización fijada por defecto en $1.530 (modificable).",
     )
 
   with col_cot2:
     costo_hora_ars = st.number_input(
-        "Valor Hora de Vuelo (ARS)", min_value=0, value=187700, step=1000
+        "Valor Hora de Vuelo (ARS)",
+        min_value=0,
+        value=235000,
+        step=1000,
+        help="Valor fijado por defecto en $235.000.",
     )
 
   with col_cot3:
@@ -477,7 +489,7 @@ if opcion_menu == "📝 Registrar Vuelo":
             "Instructor a Cargo", value="Juan Cruz Arrascaeta"
         )
         avion_sel = st.selectbox(
-            "Seleccionar Aeronave CUA", list(FLOTA_CUA.keys()), index=0
+            "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
         )
 
       with col2:
@@ -499,7 +511,7 @@ if opcion_menu == "📝 Registrar Vuelo":
             "Horas Solo (VS)", min_value=0.0, max_value=5.0, value=0.0, step=0.1
         )
 
-        horas_totales_vuelo = round(horas_dc + horas_vs, 1)
+        horas_totales_vuelo = round(horas_dc + horas_vs, 2)
         costo_vuelo_ars = int(horas_totales_vuelo * costo_hora_ars)
         costo_vuelo_usd = round(horas_totales_vuelo * costo_hora_usd, 2)
 
@@ -532,28 +544,25 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
-        info_avion = FLOTA_CUA[avion_sel]
-
-        registro_vuelo = {
+        nuevo_vuelo_data = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
-            "Modelo": info_avion["modelo"],
-            "Aeronave": info_avion["aeronave"],
             "Instructor": instructor,
+            "Aeronave": avion_sel,
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
+            "Aterrizajes": aterrizajes,
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales_vuelo,
-            "Aterrizajes": aterrizajes,
+            "Costo_ARS": costo_vuelo_ars,
+            "Costo_USD": costo_vuelo_usd,
             "Leccion": leccion,
             "Anecdotario": anecdotario,
             "Meteorologia": meteorologia,
-            "Costo_ARS": costo_vuelo_ars,
-            "Costo_USD": costo_vuelo_usd,
         }
 
-        if guardar_vuelo_bitacora(registro_vuelo):
-          st.cache_data.clear()
+        guardar_vuelo_bitacora(nuevo_vuelo_data)
+        st.cache_data.clear()
 
 # -----------------------------------------------------------------------------
 # SECCIÓN 2: VER BITÁCORA HISTÓRICA (PÚBLICA)
@@ -561,7 +570,20 @@ if opcion_menu == "📝 Registrar Vuelo":
 elif opcion_menu == "📊 Ver Bitácora":
   st.header("📊 Libro de Vuelo Digital (Historial Registrado)")
   if not df_existente.empty:
-    st.dataframe(df_existente, use_container_width=True)
+    st.dataframe(
+        df_existente,
+        use_container_width=True,
+        column_config={
+            "Leccion": st.column_config.TextColumn(
+                "Lección / Detalle",
+                help="Detalle completo de maniobras realizadas",
+                width="large",
+            ),
+            "Anecdotario": st.column_config.TextColumn(
+                "Anecdotario", width="medium"
+            ),
+        },
+    )
   else:
     st.warning("No se encontraron vuelos o no se pudo sincronizar con Sheets.")
 
@@ -575,36 +597,51 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       "👥 Trivia Desafío & Amigos (Casual)",
   ])
 
-  # --- TAB 1: PROGRESO DE HORAS & MATRIZ DE MANIOBRAS PPA ---
+  # --- TAB 1: PROGRESO DE HORAS & COSTO ACUMULADO ---
   with tab1:
     st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
     HORAS_OBJETIVO = 40.0
-    if not df_existente.empty and "Horas_Totales" in df_existente.columns:
-      horas_dc = pd.to_numeric(
-          df_existente["Horas_DC"], errors="coerce"
-      ).sum()
-      horas_vs = pd.to_numeric(
-          df_existente["Horas_VS"], errors="coerce"
-      ).sum()
-      horas_totales = pd.to_numeric(
-          df_existente["Horas_Totales"], errors="coerce"
-      ).sum()
+    if not df_existente.empty:
+      horas_dc = (
+          pd.to_numeric(df_existente.get("Horas_DC"), errors="coerce")
+          .dropna()
+          .sum()
+      )
+      horas_vs = (
+          pd.to_numeric(df_existente.get("Horas_VS"), errors="coerce")
+          .dropna()
+          .sum()
+      )
+      horas_totales = (
+          pd.to_numeric(df_existente.get("Horas_Totales"), errors="coerce")
+          .dropna()
+          .sum()
+      )
       vuelos_contados = len(df_existente)
+      costo_total_ars = (
+          pd.to_numeric(df_existente.get("Costo_ARS"), errors="coerce")
+          .dropna()
+          .sum()
+      )
+      costo_total_usd = (
+          pd.to_numeric(df_existente.get("Costo_USD"), errors="coerce")
+          .dropna()
+          .sum()
+      )
     else:
       horas_dc, horas_vs, horas_totales, vuelos_contados = 2.1, 0.0, 2.1, 3
+      costo_total_ars, costo_total_usd = 493500, 322.5
 
     porcentaje = min(1.0, horas_totales / HORAS_OBJETIVO)
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric(
-        "Horas Acumuladas",
-        f"{horas_totales:.1f} hs",
-        delta=f"-{HORAS_OBJETIVO - horas_totales:.1f} hs para completar",
-    )
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Horas Totales", f"{horas_totales:.1f} hs")
     c2.metric("Doble Comando (DC)", f"{horas_dc:.1f} hs")
     c3.metric("Solo (VS)", f"{horas_vs:.1f} hs")
-    c4.metric("Vuelos Totales", f"{vuelos_contados}")
+    c4.metric("Vuelos Registrados", f"{vuelos_contados}")
+    c5.metric("Gasto Total ARS", f"${costo_total_ars:,.0f}")
+    c6.metric("Gasto Total USD", f"USD {costo_total_usd:,.2f}")
 
     st.subheader("Barra del Curso")
     st.progress(porcentaje)
@@ -826,7 +863,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
     if not BANCO_COMPLETO:
       st.warning("No se pudo cargar el banco de preguntas.")
     else:
-      # --- BLOQUE 1: PREGUNTA DESAFÍO DEL DÍA ---
       st.subheader("🔥 Pregunta Desafío del Día (Nivel Leyenda)")
 
       dia_del_ano = datetime.date.today().timetuple().tm_yday
@@ -869,7 +905,6 @@ elif opcion_menu == "🎮 Trivia & Progreso":
 
       st.markdown("---")
 
-      # --- BLOQUE 2: TRIVIA MULTIJUGADOR LIBRE ---
       st.subheader("🎮 Trivia Rápida para Amigos")
 
       col_amg1, col_amg2 = st.columns([2, 2])
@@ -943,7 +978,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             else:
               texto_v = qa["opciones"][idx_amg_correcta]
               st.error(
-                  f"❌ **INCORRECTO.** \nLa opción correcta en realidad era:"
+                  f"❌ **INCORRECTO.** \nLa opción correcta era:"
                   f" **{texto_v}** \n*{qa['explicacion']}*"
               )
             st.rerun()
@@ -954,22 +989,3 @@ elif opcion_menu == "🎮 Trivia & Progreso":
           )
 
         st.markdown("---")
-
-      if cant_resp_amg == tot_amg and tot_amg > 0:
-        st.balloons()
-        max_amg_pts = tot_amg * 10
-        pct_amg = round((st.session_state.score_amigos / max_amg_pts) * 100, 1)
-
-        st.success(
-            f"🏆 **¡FIN DEL JUEGO!** \nPuntaje Final:"
-            f" **{st.session_state.score_amigos} de {max_amg_pts} pts**"
-            f" ({pct_amg}% de efectividad)."
-        )
-
-        if st.button("🔄 Jugar otra ronda"):
-          st.session_state.tanda_amigos = preparar_tanda_preguntas(
-              BANCO_COMPLETO, cant_amigos_sel
-          )
-          st.session_state.score_amigos = 0
-          st.session_state.resp_amigos = set()
-          st.rerun()
