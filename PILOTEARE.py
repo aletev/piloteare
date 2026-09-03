@@ -9,7 +9,7 @@ from streamlit_gsheets import GSheetsConnection
 # 1. CONFIGURACIÓN DE PÁGINA STREAMLIT
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Piloteare Pro - CUA",
+    page_title="Piloteare Pro - ALE.FPV",
     page_icon="✈️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -19,7 +19,7 @@ st.title("✈️ Piloteare - Libro de Vuelo & Entrenamiento PPA")
 st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
-# Estilo personalizado para asegurar el salto de línea en las celdas del dataframe
+# Estilo personalizado para asegurar que los textos largos envuelvan las líneas en las celdas
 st.markdown(
     """
     <style>
@@ -118,7 +118,7 @@ def cargar_banco_preguntas_completo():
 
 
 def guardar_vuelo_bitacora(datos_vuelo):
-  """Guarda un nuevo registro de vuelo en la pestaña 'Bitacora' autoincrementando 'LogNro'."""
+  """Escribe el vuelo registrado en la solapa 'Bitacora' autoincrementando LogNro y ordenando columnas."""
   try:
     conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -127,6 +127,7 @@ def guardar_vuelo_bitacora(datos_vuelo):
         "Fecha",
         "Instructor",
         "Aeronave",
+        "Modelo",
         "Hora_Salida",
         "Hora_Llegada",
         "Aterrizajes",
@@ -159,6 +160,13 @@ def guardar_vuelo_bitacora(datos_vuelo):
 
     datos_vuelo["LogNro"] = proximo_id
     df_nuevo = pd.DataFrame([datos_vuelo])
+
+    # Reordenamos columnas según el estándar esperado por la planilla
+    for col in cols_esperadas:
+      if col not in df_nuevo.columns:
+        df_nuevo[col] = ""
+    df_nuevo = df_nuevo[cols_esperadas]
+
     df_actualizado = pd.concat([df_bitacora, df_nuevo], ignore_index=True)
 
     conn.update(
@@ -167,8 +175,10 @@ def guardar_vuelo_bitacora(datos_vuelo):
     st.success(
         f"✅ ¡Vuelo N° {proximo_id} registrado exitosamente en Google Sheets!"
     )
+    return True
   except Exception as e:
     st.error(f"No se pudo guardar el vuelo en Sheets: {e}")
+    return False
 
 
 def preparar_tanda_preguntas(banco_total, cantidad_tanda=15):
@@ -318,17 +328,17 @@ def guardar_autoevaluacion_completa(datos_dict):
 df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
-# Flota oficial del CUA
+# Flota oficial del CUA separada por Matrícula limpia (Aeronave) y Modelo
 FLOTA_CUA = {
-    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
-    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
-    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
-    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
-    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
-    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
-    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
-    "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
-    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
+    "LV-CHE (Cessna 150)": {"aeronave": "LV-CHE", "modelo": "Cessna 150"},
+    "LV-JIF (Cessna 150)": {"aeronave": "LV-JIF", "modelo": "Cessna 150"},
+    "LV-LGF (Cessna 150)": {"aeronave": "LV-LGF", "modelo": "Cessna 150"},
+    "LV-JPK (Cessna 150)": {"aeronave": "LV-JPK", "modelo": "Cessna 150"},
+    "LV-CQU (Cessna 150)": {"aeronave": "LV-CQU", "modelo": "Cessna 150"},
+    "LV-OEE (Cessna 152)": {"aeronave": "LV-OEE", "modelo": "Cessna 152"},
+    "LV-IKE (Cessna 172)": {"aeronave": "LV-IKE", "modelo": "Cessna 172"},
+    "LV-S042 (Tecnam)": {"aeronave": "LV-S042", "modelo": "Tecnam P92"},
+    "Otro / Avión Visitante": {"aeronave": "LV-", "modelo": "Otro"},
 }
 
 # Lista de 16 Maniobras Oficiales PPA ANAC
@@ -489,7 +499,7 @@ if opcion_menu == "📝 Registrar Vuelo":
             "Instructor a Cargo", value="Juan Cruz Arrascaeta"
         )
         avion_sel = st.selectbox(
-            "Aeronave del CUA", list(FLOTA_CUA.keys()), index=3
+            "Aeronave del CUA", list(FLOTA_CUA.keys()), index=0
         )
 
       with col2:
@@ -544,10 +554,15 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
+        datos_aeronave = FLOTA_CUA.get(
+            avion_sel, {"aeronave": avion_sel, "modelo": "Otro"}
+        )
+
         nuevo_vuelo_data = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
             "Instructor": instructor,
-            "Aeronave": avion_sel,
+            "Aeronave": datos_aeronave["aeronave"],  # Solo matrícula: LV-CHE
+            "Modelo": datos_aeronave["modelo"],  # Modelo: Cessna 150
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
             "Aterrizajes": aterrizajes,
@@ -561,8 +576,8 @@ if opcion_menu == "📝 Registrar Vuelo":
             "Meteorologia": meteorologia,
         }
 
-        guardar_vuelo_bitacora(nuevo_vuelo_data)
-        st.cache_data.clear()
+        if guardar_vuelo_bitacora(nuevo_vuelo_data):
+          st.cache_data.clear()
 
 # -----------------------------------------------------------------------------
 # SECCIÓN 2: VER BITÁCORA HISTÓRICA (CON DETALLE DE FILA SELECCIONADA)
@@ -572,11 +587,10 @@ elif opcion_menu == "📊 Ver Bitácora":
 
   if not df_existente.empty:
     st.info(
-        "💡 **Tip:** Seleccioná una fila haciendo clic en la casilla o celda"
-        " para ver arriba la tarjeta completa con el detalle del vuelo."
+        "💡 **Tip:** Seleccioná una fila haciendo clic en cualquier celda para"
+        " desplegar el detalle extendido del vuelo."
     )
 
-    # DataFrame interactivo con modo de selección de una fila
     evento_seleccion = st.dataframe(
         df_existente,
         use_container_width=True,
@@ -594,14 +608,12 @@ elif opcion_menu == "📊 Ver Bitácora":
         },
     )
 
-    # Evaluación de selección de fila
     filas_seleccionadas = evento_seleccion.get("selection", {}).get("rows", [])
 
     if filas_seleccionadas:
       idx_fila = filas_seleccionadas[0]
       vuelo = df_existente.iloc[idx_fila]
 
-      # Despliegue del detalle arriba de la tabla
       with st.container(border=True):
         st.subheader(
             f"🔍 Detalle del Vuelo N° {vuelo.get('LogNro', idx_fila + 1)} —"
@@ -609,7 +621,9 @@ elif opcion_menu == "📊 Ver Bitácora":
         )
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.markdown(f"**✈️ Aeronave:** {vuelo.get('Aeronave', 'N/A')}")
+        c1.markdown(
+            f"**✈️ Aeronave:** {vuelo.get('Aeronave', 'N/A')} ({vuelo.get('Modelo', 'S/D')})"
+        )
         c2.markdown(f"**👨‍✈️ Instructor:** {vuelo.get('Instructor', 'N/A')}")
         c3.markdown(
             f"**⏱️ Horario:** {vuelo.get('Hora_Salida', '--')} a"
@@ -663,7 +677,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       "👥 Trivia Desafío & Amigos (Casual)",
   ])
 
-  # --- TAB 1: PROGRESO DE HORAS, COSTO ACUMULADO & MATRIZ DE MANIOBRAS ---
+  # --- TAB 1: PROGRESO DE HORAS & COSTO ACUMULADO ---
   with tab1:
     st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
