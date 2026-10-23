@@ -127,17 +127,18 @@ def guardar_vuelo_bitacora(datos_vuelo):
         "Fecha",
         "Instructor",
         "Aeronave",
+        "Modelo",
         "Hora_Salida",
         "Hora_Llegada",
-        "Aterrizajes",
         "Horas_DC",
         "Horas_VS",
         "Horas_Totales",
-        "Costo_ARS",
-        "Costo_USD",
+        "Aterrizajes",
         "Leccion",
         "Anecdotario",
         "Meteorologia",
+        "Costo_ARS",
+        "Costo_USD",
     ]
 
     try:
@@ -544,21 +545,24 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
+        info_aeronave = FLOTA_CUA[avion_sel]
+
         nuevo_vuelo_data = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
             "Instructor": instructor,
-            "Aeronave": avion_sel,
+            "Aeronave": info_aeronave["mat"],
+            "Modelo": info_aeronave["modelo"],
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
-            "Aterrizajes": aterrizajes,
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales_vuelo,
-            "Costo_ARS": costo_vuelo_ars,
-            "Costo_USD": costo_vuelo_usd,
+            "Aterrizajes": aterrizajes,
             "Leccion": leccion,
             "Anecdotario": anecdotario,
             "Meteorologia": meteorologia,
+            "Costo_ARS": costo_vuelo_ars,
+            "Costo_USD": costo_vuelo_usd,
         }
 
         guardar_vuelo_bitacora(nuevo_vuelo_data)
