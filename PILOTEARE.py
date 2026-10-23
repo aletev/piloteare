@@ -60,17 +60,15 @@ def obtener_metar(estacion="SADM"):
 def login():
   st.sidebar.markdown("---")
   st.sidebar.subheader("🌤️ Clima Aeronáutico (METAR)")
-  estacion_sel = st.selectbox(
+  estacion_sel = st.sidebar.selectbox(
       "Estación:", ["SADM (Matanza)", "SAEZ (Ezeiza)", "SABE (Aeroparque)"]
   )
-  codigo_ OACI = estacion_sel.split(" ")[0]
+  codigo_oaci = estacion_sel.split(" ")[0]
 
   if st.sidebar.button("🔄 Consultar METAR"):
-    st.sidebar.info(obtener_metar(codigo_ OACI))
+    st.sidebar.info(obtener_metar(codigo_oaci))
   else:
-    st.sidebar.caption(
-        f"Último chequeo rápido:\n`{obtener_metar(codigo_ OACI)}`"
-    )
+    st.sidebar.caption(f"Último chequeo rápido:\n`{obtener_metar(codigo_oaci)}`")
 
   st.sidebar.markdown("---")
   st.sidebar.subheader("🔒 Acceso Administrador")
@@ -156,17 +154,18 @@ def guardar_vuelo_bitacora(datos_vuelo):
         "Fecha",
         "Instructor",
         "Aeronave",
+        "Modelo",
         "Hora_Salida",
         "Hora_Llegada",
-        "Aterrizajes",
         "Horas_DC",
         "Horas_VS",
         "Horas_Totales",
-        "Costo_ARS",
-        "Costo_USD",
+        "Aterrizajes",
         "Leccion",
         "Anecdotario",
         "Meteorologia",
+        "Costo_ARS",
+        "Costo_USD",
     ]
 
     try:
@@ -347,17 +346,17 @@ def guardar_autoevaluacion_completa(datos_dict):
 df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
-# Flota oficial del CUA
+# Flota oficial del CUA con separación limpia de Matrícula (aeronave) y Modelo
 FLOTA_CUA = {
-    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-LGF"},
-    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JPK"},
-    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CQU"},
-    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-JIF"},
-    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "mat": "LV-CHE"},
-    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "mat": "LV-OEE"},
-    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "mat": "LV-IKE"},
-    "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "mat": "LV-S042"},
-    "Otro / Avión Visitante": {"modelo": "Otro", "mat": "LV-"},
+    "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-LGF"},
+    "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JPK"},
+    "LV-CQU (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-CQU"},
+    "LV-JIF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JIF"},
+    "LV-CHE (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-CHE"},
+    "LV-OEE (Cessna 152)": {"modelo": "Cessna 152", "aeronave": "LV-OEE"},
+    "LV-IKE (Cessna 172)": {"modelo": "Cessna 172", "aeronave": "LV-IKE"},
+    "LV-S042 (Tecnam)": {"modelo": "Tecnam P92", "aeronave": "LV-S042"},
+    "Otro / Avión Visitante": {"modelo": "Otro", "aeronave": "LV-"},
 }
 
 # Lista de 16 Maniobras Oficiales PPA ANAC
@@ -573,21 +572,24 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
+        info_avion = FLOTA_CUA[avion_sel]
+
         nuevo_vuelo_data = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
             "Instructor": instructor,
-            "Aeronave": avion_sel,
+            "Aeronave": info_avion["aeronave"],
+            "Modelo": info_avion["modelo"],
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
-            "Aterrizajes": aterrizajes,
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales_vuelo,
-            "Costo_ARS": costo_vuelo_ars,
-            "Costo_USD": costo_vuelo_usd,
+            "Aterrizajes": aterrizajes,
             "Leccion": leccion,
             "Anecdotario": anecdotario,
             "Meteorologia": meteorologia,
+            "Costo_ARS": costo_vuelo_ars,
+            "Costo_USD": costo_vuelo_usd,
         }
 
         guardar_vuelo_bitacora(nuevo_vuelo_data)
@@ -635,7 +637,9 @@ elif opcion_menu == "📊 Ver Bitácora":
         )
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.markdown(f"**✈️ Aeronave:** {vuelo.get('Aeronave', 'N/A')}")
+        c1.markdown(
+            f"**✈️ Aeronave:** {vuelo.get('Aeronave', 'N/A')} ({vuelo.get('Modelo', '')})"
+        )
         c2.markdown(f"**👨‍✈️ Instructor:** {vuelo.get('Instructor', 'N/A')}")
         c3.markdown(
             f"**⏱️ Horario:** {vuelo.get('Hora_Salida', '--')} a"
@@ -689,7 +693,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       "👥 Trivia Desafío & Amigos (Casual)",
   ])
 
-  # --- TAB 1: PROGRESO DE HORAS, COSTO ACUMULADO & MATRIZ DE MANIOBRAS ---
+  # --- TAB 1: PROGRESO DE HORAS & MATRIZ DE MANIOBRAS ---
   with tab1:
     st.header("📊 Avance hacia la Licencia PPA (Mínimo ANAC: 40 hs)")
 
@@ -1070,7 +1074,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             else:
               texto_v = qa["opciones"][idx_amg_correcta]
               st.error(
-                  f"❌ **INCORRECTO.** \nLa opción correcta era:"
+                  f"❌ **INCORRECTO.** \nLa opción correcta en realidad era:"
                   f" **{texto_v}** \n*{qa['explicacion']}*"
               )
             st.rerun()
@@ -1085,9 +1089,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       if cant_resp_amg == tot_amg and tot_amg > 0:
         st.balloons()
         max_amg_pts = tot_amg * 10
-        pct_amg = round(
-            (st.session_state.score_amigos / max_amg_pts) * 100, 1
-        )
+        pct_amg = round((st.session_state.score_amigos / max_amg_pts) * 100, 1)
 
         st.success(
             f"🏆 **¡FIN DEL JUEGO!** \nPuntaje Final:"
