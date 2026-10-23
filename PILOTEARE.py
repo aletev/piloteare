@@ -2,6 +2,7 @@
 import datetime
 import random
 import pandas as pd
+import requests
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
@@ -19,7 +20,7 @@ st.title("✈️ Piloteare - Libro de Vuelo & Entrenamiento PPA")
 st.caption("Centro Universitario de Aviación (CUA) - Matanza")
 st.markdown("---")
 
-# Estilo personalizado para asegurar el salto de línea y lectura completa en celdas de texto
+# Estilo personalizado para asegurar lectura completa en celdas de texto
 st.markdown(
     """
     <style>
@@ -33,7 +34,7 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# 2. SISTEMA DE AUTENTICACIÓN / LOGIN
+# 2. SISTEMA DE AUTENTICACIÓN / LOGIN Y METAR EN SIDEBAR
 # -----------------------------------------------------------------------------
 USUARIO_ADMIN = "ale"
 PASSWORD_ADMIN = "cua150"
@@ -42,7 +43,35 @@ if "authenticated" not in st.session_state:
   st.session_state.authenticated = False
 
 
+def obtener_metar(estacion="SADM"):
+  """Consulta el METAR actual desde la API pública de Aviation Weather."""
+  try:
+    url = f"https://aviationweather.gov/api/data/metar?ids={estacion}&format=raw"
+    response = requests.get(url, timeout=4)
+    if response.status_code == 200 and response.text.strip():
+      return response.text.strip()
+  except Exception:
+    pass
+  return (
+      f"No se pudo obtener el reporte METAR para {estacion} (Sin conexión)."
+  )
+
+
 def login():
+  st.sidebar.markdown("---")
+  st.sidebar.subheader("🌤️ Clima Aeronáutico (METAR)")
+  estacion_sel = st.selectbox(
+      "Estación:", ["SADM (Matanza)", "SAEZ (Ezeiza)", "SABE (Aeroparque)"]
+  )
+  codigo_ OACI = estacion_sel.split(" ")[0]
+
+  if st.sidebar.button("🔄 Consultar METAR"):
+    st.sidebar.info(obtener_metar(codigo_ OACI))
+  else:
+    st.sidebar.caption(
+        f"Último chequeo rápido:\n`{obtener_metar(codigo_ OACI)}`"
+    )
+
   st.sidebar.markdown("---")
   st.sidebar.subheader("🔒 Acceso Administrador")
 
@@ -127,18 +156,17 @@ def guardar_vuelo_bitacora(datos_vuelo):
         "Fecha",
         "Instructor",
         "Aeronave",
-        "Modelo",
         "Hora_Salida",
         "Hora_Llegada",
+        "Aterrizajes",
         "Horas_DC",
         "Horas_VS",
         "Horas_Totales",
-        "Aterrizajes",
+        "Costo_ARS",
+        "Costo_USD",
         "Leccion",
         "Anecdotario",
         "Meteorologia",
-        "Costo_ARS",
-        "Costo_USD",
     ]
 
     try:
@@ -545,24 +573,21 @@ if opcion_menu == "📝 Registrar Vuelo":
       btn_guardar = st.form_submit_button("💾 Guardar Vuelo en Bitácora Digital")
 
       if btn_guardar:
-        info_aeronave = FLOTA_CUA[avion_sel]
-
         nuevo_vuelo_data = {
             "Fecha": fecha_vuelo.strftime("%Y-%m-%d"),
             "Instructor": instructor,
-            "Aeronave": info_aeronave["mat"],
-            "Modelo": info_aeronave["modelo"],
+            "Aeronave": avion_sel,
             "Hora_Salida": hora_salida.strftime("%H:%M"),
             "Hora_Llegada": hora_llegada.strftime("%H:%M"),
+            "Aterrizajes": aterrizajes,
             "Horas_DC": horas_dc,
             "Horas_VS": horas_vs,
             "Horas_Totales": horas_totales_vuelo,
-            "Aterrizajes": aterrizajes,
+            "Costo_ARS": costo_vuelo_ars,
+            "Costo_USD": costo_vuelo_usd,
             "Leccion": leccion,
             "Anecdotario": anecdotario,
             "Meteorologia": meteorologia,
-            "Costo_ARS": costo_vuelo_ars,
-            "Costo_USD": costo_vuelo_usd,
         }
 
         guardar_vuelo_bitacora(nuevo_vuelo_data)
@@ -580,7 +605,6 @@ elif opcion_menu == "📊 Ver Bitácora":
         " para ver arriba la tarjeta completa con el detalle del vuelo."
     )
 
-    # DataFrame interactivo con modo de selección de una fila
     evento_seleccion = st.dataframe(
         df_existente,
         use_container_width=True,
@@ -598,14 +622,12 @@ elif opcion_menu == "📊 Ver Bitácora":
         },
     )
 
-    # Evaluación de selección de fila
     filas_seleccionadas = evento_seleccion.get("selection", {}).get("rows", [])
 
     if filas_seleccionadas:
       idx_fila = filas_seleccionadas[0]
       vuelo = df_existente.iloc[idx_fila]
 
-      # Despliegue del detalle arriba de la tabla
       with st.container(border=True):
         st.subheader(
             f"🔍 Detalle del Vuelo N° {vuelo.get('LogNro', idx_fila + 1)} —"
