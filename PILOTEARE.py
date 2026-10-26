@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import datetime
+import math
 import random
+import re
 import pandas as pd
 import requests
 import streamlit as st
@@ -34,7 +36,7 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# 2. SISTEMA DE AUTENTICACIÓN / LOGIN Y METAR EN SIDEBAR
+# 2. SISTEMA DE AUTENTICACIÓN / LOGIN Y METAR / RELOJITO DE VIENTO
 # -----------------------------------------------------------------------------
 USUARIO_ADMIN = "ale"
 PASSWORD_ADMIN = "cua150"
@@ -57,18 +59,71 @@ def obtener_metar(estacion="SADM"):
   )
 
 
+def parsear_viento_metar(metar_text):
+  """Extrae la dirección y velocidad del viento del texto METAR."""
+  if not metar_text or "Sin conexión" in metar_text or "No se pudo" in metar_text:
+    return None, None, None
+
+  match = re.search(r"\b(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?KT\b", metar_text)
+  if match:
+    dir_str, spd_str, gust_str = match.groups()
+    vel = int(spd_str)
+    racha = int(gust_str) if gust_str else 0
+    if dir_str == "VRB":
+      return "VRB", vel, racha
+    else:
+      return int(dir_str), vel, racha
+  return None, None, None
+
+
+def calcular_viento_cruzado(dir_viento, vel_viento, rumb_pista_hdg):
+  """Calcula componente de frente/cola y viento de través (crosswind)."""
+  if dir_viento == "VRB" or dir_viento is None:
+    return 0, vel_viento
+  diff_rad = math.radians(dir_viento - rumb_pista_hdg)
+  headwind = vel_viento * math.cos(diff_rad)
+  crosswind = abs(vel_viento * math.sin(diff_rad))
+  return round(headwind, 1), round(crosswind, 1)
+
+
 def login():
   st.sidebar.markdown("---")
-  st.sidebar.subheader("🌤️ Clima Aeronáutico (METAR)")
+  st.sidebar.subheader("🌤️ Clima & Relojito de Viento (METAR)")
+
+  # SADM por defecto (index=0)
   estacion_sel = st.sidebar.selectbox(
-      "Estación:", ["SADM (Matanza)", "SAEZ (Ezeiza)", "SABE (Aeroparque)"]
+      "Estación:",
+      ["SADM (Matanza)", "SAEZ (Ezeiza)", "SABE (Aeroparque)"],
+      index=0,
   )
   codigo_oaci = estacion_sel.split(" ")[0]
 
-  if st.sidebar.button("🔄 Consultar METAR"):
-    st.sidebar.info(obtener_metar(codigo_oaci))
-  else:
-    st.sidebar.caption(f"Último chequeo rápido:\n`{obtener_metar(codigo_oaci)}`")
+  metar_actual = obtener_metar(codigo_oaci)
+  st.sidebar.code(metar_actual, language="text")
+
+  # Análisis de viento y relojito para Matanza (SADM) u otras pistas
+  dir_v, vel_v, gust_v = parsear_viento_metar(metar_actual)
+  if dir_v is not None:
+    st.sidebar.markdown("##### 🧭 Análisis Pistas Matanza (17 / 35)")
+    pista_activa = st.sidebar.radio(
+        "Pista en uso:", ["Pista 17 (170°)", "Pista 35 (350°)"], horizontal=True
+    )
+    rumb_pista = 170 if "17" in pista_activa else 350
+
+    if dir_v == "VRB":
+      st.sidebar.warning("⚠️ Viento Variable (VRB)")
+    else:
+      hw, cw = calcular_viento_cruzado(dir_v, vel_v, rumb_pista)
+      estado_cw = (
+          "🚨 ¡Atención! >15 KT" if cw > 15 else "✅ Dentro de límites (≤15 KT)"
+      )
+
+      st.sidebar.markdown(f"""
+            - **Dir / Vel:** {dir_v}° / {vel_v} KT {f'(G{gust_v} KT)' if gust_v else ''}
+            - **Viento de Través:** **{cw} KT**
+            - **Componente:** {'Frente' if hw >= 0 else 'Cola'} ({abs(hw)} KT)
+            - **Estado Cruzado:** {estado_cw}
+            """)
 
   st.sidebar.markdown("---")
   st.sidebar.subheader("🔒 Acceso Administrador")
@@ -346,7 +401,7 @@ def guardar_autoevaluacion_completa(datos_dict):
 df_existente = cargar_datos_bitacora()
 BANCO_COMPLETO = cargar_banco_preguntas_completo()
 
-# Flota oficial del CUA con separación limpia de Matrícula (aeronave) y Modelo
+# Flota oficial del CUA
 FLOTA_CUA = {
     "LV-LGF (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-LGF"},
     "LV-JPK (Cessna 150)": {"modelo": "Cessna 150", "aeronave": "LV-JPK"},
@@ -1074,7 +1129,7 @@ elif opcion_menu == "🎮 Trivia & Progreso":
             else:
               texto_v = qa["opciones"][idx_amg_correcta]
               st.error(
-                  f"❌ **INCORRECTO.** \nLa opción correcta en realidad era:"
+                  f"❌ **INCORRECTO.** \nLa opción correcta era:"
                   f" **{texto_v}** \n*{qa['explicacion']}*"
               )
             st.rerun()
@@ -1089,7 +1144,9 @@ elif opcion_menu == "🎮 Trivia & Progreso":
       if cant_resp_amg == tot_amg and tot_amg > 0:
         st.balloons()
         max_amg_pts = tot_amg * 10
-        pct_amg = round((st.session_state.score_amigos / max_amg_pts) * 100, 1)
+        pct_amg = round(
+            (st.session_state.score_amigos / max_amg_pts) * 100, 1
+        )
 
         st.success(
             f"🏆 **¡FIN DEL JUEGO!** \nPuntaje Final:"
